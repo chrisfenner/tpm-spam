@@ -11,7 +11,7 @@ computer systems. On a typical PC with UEFI, there are on the order of 100
 measurements into the various PCRs.
 
 Users of TPM may want to predictively seal data to expected PCR values. TPM
-technically allows this, but PCRs make it easy. TCG defines a
+technically allows this, but PCRs don't make it easy. TCG defines a
 [specification](https://trustedcomputinggroup.org/resource/tcg-efi-platform-specification/)
 for the various measurements that EFI platforms should make so that firmware
 and software code and configuration are accurately depicted in the PCRs for
@@ -24,7 +24,8 @@ data being extended might be a counter that is intended to change from one boot
 to the next.
 
 ## Spam
-Spam = "Semantic Platform Attestation Measurements"
+Spam = "**S**emantic **P**latform **A**ttestation **M**easurements"
+
 A spam is an object in TPM memory that can only be overwritten after a reboot.
 This object can be referenced in TPM policies, for example, policies on sealed
 data.
@@ -51,7 +52,11 @@ vulnerability in that software should be reflected in PCR[00], and any policy th
 should also depend on PCR[00].
 
 Each boot phase after spam initialization should be measured into a spam before being launched.
-Failure to measure a spam should cause the invalidation of PCR[00].
+Failure to measure a spam should cause the invalidation of PCR[00]. This prevents a piece of
+software from modifying its own spam. Note that because spams are all defined (but not written) at
+the beginning of the boot, measuring a spam is simply a write to an NV index that already exists
+and has space in memory already allocated to it. The chain of measurements starts with the Root of
+Trust for Measurement (RTM) in PCR[00] and extends through the boot chain as reflected in the spams.
 
 After boot, the boot chain is reflected into PCR[00] and a collection of spams, e.g.:
 * PCR[00]: BIOS (form: a hash of hashes)
