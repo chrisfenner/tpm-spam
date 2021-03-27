@@ -17,7 +17,7 @@ for the various measurements that EFI platforms should make so that firmware
 and software code and configuration are accurately depicted in the PCRs for
 explicit attestation by verifying a TCG log.
 
-On modern PCs, PCRs are too brittle to reliably predictively seal data against.
+On modern PCs, most PCRs are too brittle to reliably predictively seal data against.
 Some unforeseen minor configuration change or phase of the moon may cause
 software to extend different data into a PCR from one boot to the next, or the
 data being extended might be a counter that is intended to change from one boot
@@ -30,13 +30,26 @@ A spam is an object in TPM memory that can only be overwritten after a reboot.
 This object can be referenced in TPM policies, for example, policies on sealed
 data.
 Spam is implemented on current TPMs by use of NV (nonvolatile) objects, with
-NV attributes that make them not-so nonvolatile.
+NV attributes that make them not-so nonvolatile. The spec calls these "Hybrid" indices.
 * `TPMA_NV_ORDERLY` indicates this index can be cached in RAM until clean shutdown, and also causes 
   `TPMA_NV_WRITTEN` to be cleared on TPM Reset (cold reboot).
 * `TPMA_NV_CLEAR_STCLEAR` clears the `TPMA_NV_WRITTEN` bit even on TPM Restart (warm reboot).
 * An index with `TPMA_NV_WRITTEN` cleared may as well not have data in it.
   * Calls to `TPM2_NV_Read` and `TPM2_PolicyNV` fail if the index is not written, returning
     `TPM_RC_NV_UNINITIALIZED`.
+* NV index size is 64 bytes, which is enough for a 256-bit hash (e.g., a verification key used to
+* verify some signature containing the boot stage's code plus metadata) and 256 bits of metadata
+* (e.g., some opaque hash of something else, four 64-bit version fields, a 32-character ASCII
+* string, or some combination of semantically meaningful data for versioned policy assertions).
+
+## Compatibility
+Spam depends only on features in
+[the current TPM spec](https://trustedcomputinggroup.org/resource/tpm-library-specification/),
+but the spec calls out that hybrid NV index support is not mandatory for all TPMs:
+[Part 1: revision 1.59](https://trustedcomputinggroup.org/wp-content/uploads/TCG_TPM2_r1p59_Part1_Architecture_pub.pdf)
+says in particular in section 32.7 (NV Indices):
+> An implementation is not required to support an arbitrary number of hybrid indices and is not
+> required to support any ordinary hybrid index with a size of more than eight octets.
 
 ## Threat Model
 Spams have a policy that allows writes only when `TPMA_NV_WRITTEN` is cleared, so they are
