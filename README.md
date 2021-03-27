@@ -38,9 +38,9 @@ NV attributes that make them not-so nonvolatile. The spec calls these "Hybrid" i
   * Calls to `TPM2_NV_Read` and `TPM2_PolicyNV` fail if the index is not written, returning
     `TPM_RC_NV_UNINITIALIZED`.
 * NV index size is 64 bytes, which is enough for a 256-bit hash (e.g., a verification key used to
-* verify some signature containing the boot stage's code plus metadata) and 256 bits of metadata
-* (e.g., some opaque hash of something else, four 64-bit version fields, a 32-character ASCII
-* string, or some combination of semantically meaningful data for versioned policy assertions).
+  verify some signature containing the boot stage's code plus metadata) and 256 bits of metadata
+  (e.g., some opaque hash of something else, four 64-bit version fields, a 32-character ASCII
+  string, or some combination of semantically meaningful data for versioned policy assertions).
 
 ## Compatibility
 Spam depends only on features in
