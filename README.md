@@ -48,8 +48,14 @@ Spam depends only on features in
 but the spec calls out that hybrid NV index support is not mandatory for all TPMs:
 [Part 1: revision 1.59](https://trustedcomputinggroup.org/wp-content/uploads/TCG_TPM2_r1p59_Part1_Architecture_pub.pdf)
 says in particular in section 32.7 (NV Indices):
+
 > An implementation is not required to support an arbitrary number of hybrid indices and is not
 > required to support any ordinary hybrid index with a size of more than eight octets.
+
+Spam uses TPMA_NV_ORDERLY to avoid wasted NV write cycles on each boot. However, to maintain
+the desired security properties (spams reset on reboot), `TPMA_NV_CLEAR_STCLEAR` would be
+sufficient in a modified spam implementation on TPMs that don't support larger ordinary hybrid
+indices.
 
 ## Threat Model
 Spams have a policy that allows writes only when `TPMA_NV_WRITTEN` is cleared, so they are
