@@ -1,13 +1,15 @@
 digraph D {
 	graph [compound=true];
 	rankdir=LR
-	{rank=same pcr_0 spam_1 spam_2}
 
-	pcr_0 [shape=record label="pcr 0|68875d7f...|bios|{sha256|f367c842...}" fillcolor="gainsboro" style="filled"];
+	subgraph cluster_2 {
+		label="TPM state"
+		{rank=same pcr_0 spam_1 spam_2}
 
-	spam_1 [shape=record label="spam 1|a0f3e0af...0002...0004...|grub|{signer sha256|a0f2e0af...}|{major|0002}|{minor|0004}" fillcolor="thistle1" style="filled"];
-
-	spam_2 [shape=record label="spam 2|15a442c9...000a...0008...3039...|kernel|{signer sha256|15a442c9...}|{major|000a}|{minor|0008}|{revision|3039}" fillcolor="lemonchiffon" style="filled"];
+		pcr_0 [shape=record label="pcr 0|68875d7f...|bios|{sha256|f367c842...}" fillcolor="gainsboro" style="filled"];
+		spam_1 [shape=record label="spam 1|a0f3e0af...0002...0004...|grub|{signer sha256|a0f2e0af...}|{major|0002}|{minor|0004}" fillcolor="thistle1" style="filled"];
+		spam_2 [shape=record label="spam 2|15a442c9...000a...0008...3039...|kernel|{signer sha256|15a442c9...}|{major|000a}|{minor|0008}|{revision|3039}" fillcolor="lemonchiffon" style="filled"];
+	}
 
 	subgraph cluster_0 {
 		label="sealed blob policy"
