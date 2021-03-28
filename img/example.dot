@@ -1,0 +1,43 @@
+digraph D {
+	graph [compound=true];
+	rankdir=LR
+	{rank=same pcr_0 spam_1 spam_2}
+
+	pcr_0 [shape=record label="pcr 0|68875d7f...|bios|{sha256|f367c842...}" fillcolor="gainsboro" style="filled"];
+
+	spam_1 [shape=record label="spam 1|a0f3e0af...0002...0004...|grub|{signer sha256|a0f2e0af...}|{major|0002}|{minor|0004}" fillcolor="thistle1" style="filled"];
+
+	spam_2 [shape=record label="spam 2|15a442c9...000a...0008...3039...|kernel|{signer sha256|15a442c9...}|{major|000a}|{minor|0008}|{revision|3039}" fillcolor="lemonchiffon" style="filled"];
+
+	subgraph cluster_0 {
+		label="sealed blob policy"
+		subgraph cluster_1 {
+			label="exactly this bios"
+			fillcolor="gainsboro"
+			style="filled"
+			ibb_policy [shape=record label="pcr 0|==|68875d7f..."];
+		}
+		subgraph cluster_3 {
+			{rank=same grub_policy_0 grub_policy_1 grub_policy_2}
+			label="prod-signed grub >= 2.4"
+			fillcolor="thistle1"
+			style="filled"
+			grub_policy_0 [shape=record label="spam 1[0..31]|==|a0f3e0af..."];
+			grub_policy_1 [shape=record label="spam 1[32..35]|==|0002"];
+			grub_policy_2 [shape=record label="spam 1[36..39]|\>=|0004"];
+		}
+		subgraph cluster_4 {
+			{rank=same kernel_policy_0 kernel_policy_1 kernel_policy_2}
+			label="prod-signed kernel >= 10.8"
+			fillcolor="lemonchiffon"
+			style="filled"
+			kernel_policy_0 [shape=record label="spam 2[0..31]|==|15a442c9..."];
+			kernel_policy_1 [shape=record label="spam 2[32..35]|==|000a"];
+			kernel_policy_2 [shape=record label="spam 2[36..39]|\>=|0008"];
+		}
+	}
+
+	ibb_policy -> pcr_0 [ltail=cluster_1];
+	grub_policy_0 -> spam_1 [ltail=cluster_3];
+	kernel_policy_0 -> spam_2 [ltail=cluster_4];
+}

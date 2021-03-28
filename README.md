@@ -1,11 +1,32 @@
 # tpm-spam
-Semantic Platform Attestation Measurements
+Spam = "**S**emantic **P**latform **A**ttestation **M**easurements"
 
 ## Objective
 Facilitate predictive TPM sealing with meaningful abstractions.
 
+Storing meaningful, structured measurements allows scenarios like predictively sealing secrets to
+"this particular version, or later" of platform software. As an alternative to PCR values (which are
+hashes-of-hashes), spams contain context-specific meaningful data such as "who signed this" and
+"what version was it sign as". Policies can then be constructed based on these semantics so that
+policy-writers can identify software as fine or coarse grained as they prefer for each situation.
+
+![example](img/example.svg)
+
+In this example, someone has sealed a data blob that is unsealable to the following software stack:
+* The BIOS which results in PCR[00] being equal to 68875d7f...
+* Any grub signed by a key whose hash is a0f3e0af, major version 2, minor version 4 or later
+* Any kernel signed by a key whose hash is 15a442c9, major version 10, minor version 8 or later
+
+Updating the BIOS will cause the data to no longer be unsealed (since it will change PCR 0). But
+a minor version bump to either grub or kernel, as long as the same signing key is used, will still
+match the policy and allow data to be unsealed.
+
+This enables older data blobs to still be unsealable to updated software, while maintaining the
+property that downgrading the software will render the blobs unavailable. This is impossible using
+Platform Configuration Registers (PCRs).
+
 ## Background
-TPMs contain PCRs, which are arrays of 24 hash values. Software, configuration,
+TPMs contain banks of PCRs, which are arrays of 24 hash values. Software, configuration,
 and well-meaning commentary are measured into PCRs by the boot stack on modern
 computer systems. On a typical PC with UEFI, there are on the order of 100
 measurements into the various PCRs.
@@ -15,7 +36,7 @@ technically allows this, but PCRs don't make it easy. TCG defines a
 [specification](https://trustedcomputinggroup.org/resource/tcg-efi-platform-specification/)
 for the various measurements that EFI platforms should make so that firmware
 and software code and configuration are accurately depicted in the PCRs for
-explicit attestation by verifying a TCG log.
+explicit attestation by verifying a TCG log against PCR values.
 
 On modern PCs, most PCRs are too brittle to reliably predictively seal data against.
 Some unforeseen minor configuration change or phase of the moon may cause
@@ -24,8 +45,6 @@ data being extended might be a counter that is intended to change from one boot
 to the next.
 
 ## Spam
-Spam = "**S**emantic **P**latform **A**ttestation **M**easurements"
-
 A spam is an object in TPM memory that can only be overwritten after a reboot.
 This object can be referenced in TPM policies, for example, policies on sealed
 data.
@@ -57,7 +76,7 @@ the desired security properties (spams reset on reboot), `TPMA_NV_CLEAR_STCLEAR`
 sufficient in a modified spam implementation on TPMs that don't support larger ordinary hybrid
 indices.
 
-## Threat Model
+## Design details
 Spams have a policy that allows writes only when `TPMA_NV_WRITTEN` is cleared, so they are
 write-once-per-boot. This means that whichever piece of code on a system writes a particular spam
 first, wins.
@@ -90,5 +109,5 @@ version (e.g., the next 4 bytes of the spam interpreted as a uint). This would a
 for a particular kernel to still be unsealable by an updated kernel (signed by the same key), while
 allowing future secrets sealed to that kernel not to be unsealable by a rolled-back kernel. 
 
-The index space of spam is much sparser than PCRs: 16 bits or 65536 possible spams. Each spam index
-should be unique per purpose, and encode stable formatting semantics.
+The index space of spam is much sparser than PCRs: 16 bits or 65536 possible spams. In a given
+environment, each spam index should be unique per purpose, and encode stable formatting semantics.
