@@ -1,13 +1,24 @@
 # tpm-spam
 Spam = "**S**emantic **P**latform **A**ttestation **M**easurements"
 
+Spams are strings of 64 bytes of data representing a boot stage identity measured into a TPM. Spams
+for a given boot stage follow a given schema, which is then matched against by TPM policies.
+
+For example, a spam for a signed Linux kernel might look like
+```
+15a442c9a5d7213c6d40560ef508f578f412b9c929629e5f173eca958e71964a0000000a00000008000030390000000000000000000000000000000000000000
+```
+where `15a442c9a5d7213c6d40560ef508f578f412b9c929629e5f173eca958e71964a` is the SHA-256 hash of the
+verification key used to verify the kernel, the major version is `0000000a` (10), the minor version
+is `00000008`, and the build revision is `00003039` (12345). The remaining bits are unused.
+
 ## Objective
 Facilitate predictive TPM sealing with meaningful abstractions.
 
-Storing meaningful, structured measurements allows scenarios like predictively sealing secrets to
+Storing meaningful, structured measurements allows scenarios such as predictively sealing secrets to
 "this particular version, or later" of platform software. As an alternative to PCR values (which are
-hashes-of-hashes), spams contain context-specific meaningful data such as "who signed this" and
-"what version was it sign as". Policies can then be constructed based on these semantics so that
+hashes-of-hashes), spam values contain context-specific meaningful data such as "who signed this" and
+"what version was it signed as". Policies can then be constructed based on these semantics so that
 policy-writers can identify software as fine or coarse grained as they prefer for each situation.
 
 ![example](img/example.svg)
@@ -89,6 +100,14 @@ Spam assumes that the software initializing all the spams is extended into PCR[0
 vulnerability in that software should be reflected in PCR[00], and any policy that depends on spams
 should also depend on PCR[00].
 
+The anticipated schema of most spams (hash of key || version data) assumes that verification keys
+for boot stages should not be universal. By including the hash of the verification key along with
+whatever version metadata was signed, detailed access control restrictions
+between various keys that may be known to software (for example, prod vs dev keys) can be delegated
+to the authors of sealed blob policies. Some types of data need not be signed, and instead
+could be included directly and/or hashed to produce a spam: for example, a small configuration
+file.
+
 Each boot phase after spam initialization should be measured into a spam before being launched.
 Failure to measure a spam should cause the invalidation of PCR[00]. This prevents a piece of
 software from modifying its own spam. Note that because spams are all defined (but not written) at
@@ -100,14 +119,27 @@ After boot, the boot chain is reflected into PCR[00] and a collection of spams, 
 * PCR[00]: BIOS (form: a hash of hashes)
 * SPAM: Bootloader (form: hash of key used to verify GRUB || GRUB version)
 * SPAM: Kernel (form: hash of key used to verify kernel || kernel version)
-* SPAM: Kernel command-line (form: hash of cmdline)
 
 Spam allows policy authors to reference semantic measurements of code depending on the format of
 the particular spam being referenced. For example, a kernel spam policy could require a particular
 kernel verification key hash (e.g., the first 32 bytes of the spam) and a minimum major kernel
 version (e.g., the next 4 bytes of the spam interpreted as a uint). This would allow secrets sealed
 for a particular kernel to still be unsealable by an updated kernel (signed by the same key), while
-allowing future secrets sealed to that kernel not to be unsealable by a rolled-back kernel. 
+allowing future secrets sealed to that kernel not to be unsealable by a rolled-back kernel.
+
+With AND/OR policy tree semantics (not yet discussed), a policy could be written to facilitate
+rotation of the keys used to sign software, for example
+* Either:
+  * Kernel is signed by (the old key)
+  * Kernel is signed by (the new key)
+* Plus:
+  * Kernel is signed as major version X
+  * Kernel is signed as minor version at least Y
 
 The index space of spam is much sparser than PCRs: 16 bits or 65536 possible spams. In a given
 environment, each spam index should be unique per purpose, and encode stable formatting semantics.
+
+Because a system could have many spams, all stored separately, complex systems with multiple pieces
+of firmware (for example, BMC/NIC firmware), whose boot chain is less of a linear chain and more of
+a directed acyclical graph, can still be represented and secrets can be sealed to expected acceptable
+states of all measured parts.
