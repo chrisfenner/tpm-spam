@@ -1,0 +1,46 @@
+// Run regenerate_source.sh before and commit updated generated code along with
+// any changes to policy.proto.
+// Alternative: Introduce use of Bazel to this simple project. Do you want that?
+syntax = "proto3";
+package policy;
+
+option go_package = "pkg/policypb";
+
+message Rule {
+  oneof assertion {
+    Compare compare = 1;
+    And and = 2;
+    Or or = 3;
+  }
+}
+
+enum Operator {
+  EQ = 0;
+  NEQ = 1;
+  SIGNED_GT = 2;
+  UNSIGNED_GT = 3;
+  SIGNED_LT = 4;
+  UNSIGNED_LT = 5;
+  SIGNED_GE = 6;
+  UNSIGNED_GE = 7;
+  SIGNED_LE = 8;
+  UNSIGNED_LE = 9;
+  BITSET = 10;
+  BITCLEAR = 11;
+}
+
+message Compare {
+  uint32 index = 1;
+  uint32 offset = 2;
+  Operator operator = 3;
+  bytes operand = 4;
+}
+
+message And {
+  repeated Rule rule = 1;
+}
+
+message Or {
+  repeated Rule rule = 1;
+}
+
