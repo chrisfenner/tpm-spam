@@ -2,13 +2,14 @@
 package spam
 
 import (
-	"github.com/google/go-tpm/tpm2"
+	"github.com/chrisfenner/tpm-spam/pkg/policypb"
+	_ "github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
 	"io"
 )
 
-// DefineSpam sets up a spam at the specified slot.
-func DefineSpam(tpm io.ReadWriter, slot uint16, platformAuth string) error {
+// Define sets up a spam at the specified slot.
+func Define(tpm io.ReadWriter, slot uint16, platformAuth string) error {
 	// TODO: NVDefineSpace to set up an NV index
 	// Index: 0x017F0000 (Platform Reserved) + slot
 	//   Rationale: Some slot in the Platform range.
@@ -54,33 +55,25 @@ func DefineSpam(tpm io.ReadWriter, slot uint16, platformAuth string) error {
 	return nil
 }
 
-// WriteSpam writes the spam at the specified slot.
-func WriteSpam(tpm io.ReadWriter, slot uint16, data [64]byte) error {
+// Write writes the spam at the specified slot.
+func Write(tpm io.ReadWriter, slot uint16, data [64]byte) error {
 	// TODO: NVWrite using the auth policy.
 	return nil
 }
 
-// ReadSpam reads the spam at the specified slot.
-func ReadSpam(tpm io.ReadWriter, slot uint16) (*[64]byte, error) {
-	return nil
+// Read reads the spam at the specified slot.
+func Read(tpm io.ReadWriter, slot uint16) (*[64]byte, error) {
+	return nil, nil
 }
 
-// Check is an assertion about the contents of a spam.
-type Check struct {
-	slot     uint16
-	operator uint16
-	offset   uint16
-	operand  []byte
-}
-
-// PolicySpam adds a policy check against a particular spam.
-func PolicySpam(tpm io.ReadWriter, session tpmutil.Handle, check *Check) error {
+// Policy adds a policy check against a particular spam.
+func Policy(tpm io.ReadWriter, session tpmutil.Handle, policy *policypb.Rule) error {
 	// TODO: Feed the check into PolicyNV
 	return nil
 }
 
-// UndefineSpam undefines the spam at the specified slot.
-func UndefineSpam(tpm io.ReadWriter, slot uint16, platformAuth string) error {
+// Undefine undefines the spam at the specified slot.
+func Undefine(tpm io.ReadWriter, slot uint16, platformAuth string) error {
 	// TODO: NVUndefineSpace of the index using platform auth.
 	return nil
 }
