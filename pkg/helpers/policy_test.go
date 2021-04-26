@@ -63,18 +63,18 @@ spam { index: 1 offset: 36 comparison: EQ operand: "baz" }
 				},
 				{
 					ruleFromTextpb(`
-spam { index: 1 offset: 32 comparison: EQ operand: "bar" }
-					`),
-					ruleFromTextpb(`
-spam { index: 1 offset: 36 comparison: EQ operand: "baz" }
-					`),
-				},
-				{
-					ruleFromTextpb(`
 spam { index: 1 offset: 32 comparison: EQ operand: "foo" }
 					`),
 					ruleFromTextpb(`
 spam { index: 1 offset: 36 comparison: EQ operand: "qux" }
+					`),
+				},
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 32 comparison: EQ operand: "bar" }
+					`),
+					ruleFromTextpb(`
+spam { index: 1 offset: 36 comparison: EQ operand: "baz" }
 					`),
 				},
 				{
@@ -178,16 +178,16 @@ and {
 					ruleFromTextpb(` spam { operand: "f" } `),
 				},
 				{
-					ruleFromTextpb(` spam { operand: "c" } `),
-					ruleFromTextpb(` spam { operand: "d" } `),
-					ruleFromTextpb(` spam { operand: "e" } `),
-					ruleFromTextpb(` spam { operand: "f" } `),
-				},
-				{
 					ruleFromTextpb(` spam { operand: "a" } `),
 					ruleFromTextpb(` spam { operand: "b" } `),
 					ruleFromTextpb(` spam { operand: "g" } `),
 					ruleFromTextpb(` spam { operand: "h" } `),
+				},
+				{
+					ruleFromTextpb(` spam { operand: "c" } `),
+					ruleFromTextpb(` spam { operand: "d" } `),
+					ruleFromTextpb(` spam { operand: "e" } `),
+					ruleFromTextpb(` spam { operand: "f" } `),
 				},
 				{
 					ruleFromTextpb(` spam { operand: "c" } `),

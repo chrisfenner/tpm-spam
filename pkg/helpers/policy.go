@@ -61,8 +61,8 @@ func normalizeAnd(and *policypb.And) ([][]*policypb.Rule, error) {
 		// Calculate the Cartesian product of the running policy with the next policy.
 		// TODO: Reduce the number of reallocations here.
 		var newRes [][]*policypb.Rule
-		for _, nextPolicy := range normalized {
-			for _, originalPolicy := range res {
+		for _, originalPolicy := range res {
+			for _, nextPolicy := range normalized {
 				newRes = append(newRes, append(originalPolicy, nextPolicy...))
 			}
 		}
