@@ -42,7 +42,7 @@ message SpamRule {
   // The number of bytes into the spam the first operand begins at.
   uint32 offset = 2;
   // The comparison operator to use for the rule.
-  Comparison comparision = 3;
+  Comparison comparison = 3;
   // The second operand for the operation.
   bytes operand = 4;
 }
