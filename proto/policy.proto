@@ -6,15 +6,21 @@ package policy;
 
 option go_package = "pkg/policypb";
 
-message Rule {
+// A Policy represents an AND/OR policy tree describing a set of acceptable states.
+message Policy {
   oneof assertion {
-    Compare compare = 1;
+    // A single leaf assertion.
+    Rule rule = 1;
+    // AND-aggregation of a set of sub-policies.
     And and = 2;
+    // OR-aggregation of a set of sub-policies.
     Or or = 3;
   }
 }
 
-enum Operator {
+// A Comparison operator describes how to match against a given value.
+// All integer comparisons are big-endian, and signed comparisons are 2's-complement.
+enum Comparison {
   EQ = 0;
   NEQ = 1;
   SIGNED_GT = 2;
@@ -29,18 +35,34 @@ enum Operator {
   BITCLEAR = 11;
 }
 
-message Compare {
+// A Spam rule asserts a matcher against a sub-array of a spam.
+message SpamRule {
+  // The spam index (0 to 65536) to match against.
   uint32 index = 1;
+  // The number of bytes into the spam the first operand begins at.
   uint32 offset = 2;
-  Operator operator = 3;
+  // The comparison operator to use for the rule.
+  Comparison comparision = 3;
+  // The second operand for the operation.
   bytes operand = 4;
 }
 
+// An And policy aggregates sub-policies, requiring all children to be satisfied.
 message And {
-  repeated Rule rule = 1;
+  // The sub-policies to aggregate.
+  repeated Policy policy = 1;
 }
 
+// An Or policy aggregates sub-policies, requiring at least one child to be satisfied.
 message Or {
-  repeated Rule rule = 1;
+  // The sub-policies to aggregate.
+  repeated Policy policy = 1;
 }
 
+// A leaf rule that is some assertion against RoT state.
+message Rule {
+  oneof assertion {
+    // A rule that asserts the value of a particular spam.
+    SpamRule spam = 1;
+  }
+}
