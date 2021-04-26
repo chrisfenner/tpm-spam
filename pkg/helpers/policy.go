@@ -1,4 +1,4 @@
-package policy
+package helpers
 
 import (
 	"crypto"
@@ -63,7 +63,7 @@ func normalizeAnd(and *policypb.And) ([][]*policypb.Rule, error) {
 		var newRes [][]*policypb.Rule
 		for _, nextPolicy := range normalized {
 			for _, originalPolicy := range res {
-				newRes = append(newRes, originalPolicy, nextPolicy)
+				newRes = append(newRes, append(originalPolicy, nextPolicy...))
 			}
 		}
 		res = newRes
