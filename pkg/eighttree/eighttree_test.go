@@ -46,3 +46,30 @@ func TestInternalCounts(t *testing.T) {
 		})
 	}
 }
+
+func TestParentIndex(t *testing.T) {
+	cases := []struct {
+		parent int
+		children []int
+	}{
+		{0, []int{1,2,3,4,5,6,7,8}},
+		{1, []int{9,10,11,12,13,14,15,16}},
+		{2, []int{17,18,19,20,21,22,23,24}},
+	}
+
+	for _, testCase := range cases {
+		name := fmt.Sprintf("%d-%v", testCase.parent, testCase.children)
+		t.Run(name, func(t *testing.T) {
+			for i, testChild := range testCase.children {
+				parent := eighttree.ParentIndex(testChild)
+				if parent != testCase.parent {
+					t.Errorf("want parent %d got %d", testCase.parent, parent)
+				}
+				child := eighttree.ChildIndex(testCase.parent, i)
+				if child != testChild {
+					t.Errorf("want child %d got %d", testChild, child)
+				}
+			}
+		})
+	}
+}

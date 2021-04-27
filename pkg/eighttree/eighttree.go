@@ -50,5 +50,5 @@ func ParentIndex(child int) int {
 
 // ChildIndex returns the index into the complete array representation of the nth child node.
 func ChildIndex(parent, n int) int {
-	return (8 * parent) + n
+	return (8 * parent) + n + 1
 }
