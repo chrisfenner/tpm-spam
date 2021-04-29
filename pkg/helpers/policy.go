@@ -198,8 +198,8 @@ func internalPolicy(policy *[]byte, t PolicyHashTree, index int, alg crypto.Hash
 	return nil
 }
 
-// Calculate the TPM policy hash associated with the given spam policy with the specified algorithm.
-func Calculate(policy *policypb.Policy, alg crypto.Hash) ([]byte, error) {
+// CalculatePolicy calculates the TPM policy hash associated with the given spam policy with the specified algorithm.
+func CalculatePolicy(policy *policypb.Policy, alg crypto.Hash) ([]byte, error) {
 	norm, err := Normalize(policy)
 	if err != nil {
 		return nil, fmt.Errorf("could not normalize policy: %w", err)
