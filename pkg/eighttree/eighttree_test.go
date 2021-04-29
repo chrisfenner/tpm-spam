@@ -49,12 +49,12 @@ func TestInternalCounts(t *testing.T) {
 
 func TestParentIndex(t *testing.T) {
 	cases := []struct {
-		parent int
+		parent   int
 		children []int
 	}{
-		{0, []int{1,2,3,4,5,6,7,8}},
-		{1, []int{9,10,11,12,13,14,15,16}},
-		{2, []int{17,18,19,20,21,22,23,24}},
+		{0, []int{1, 2, 3, 4, 5, 6, 7, 8}},
+		{1, []int{9, 10, 11, 12, 13, 14, 15, 16}},
+		{2, []int{17, 18, 19, 20, 21, 22, 23, 24}},
 	}
 
 	for _, testCase := range cases {
