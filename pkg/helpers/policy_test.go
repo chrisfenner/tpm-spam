@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto"
 	"encoding/hex"
+	"fmt"
 	"github.com/chrisfenner/tpm-spam/pkg/helpers"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/golang/protobuf/proto"
@@ -279,10 +280,150 @@ func TestSpamTemplate(t *testing.T) {
 	}
 }
 
+func TestSpamName(t *testing.T) {
+	cases := []struct {
+		index   uint32
+		nameHex string
+	}{
+		{
+			1,
+			"0022000bfe198d7f6f167df8c554d5c075715fa56dcf39c29e9acad2f7bdaf36dbecbb59",
+		},
+		{
+			3,
+			"0022000b8c1f794ff7510373a142b6b7bdcfc120541aab0486941b31c90f0f8109ff4626",
+		},
+	}
+	for i, testCase := range cases {
+		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
+			expectedName, err := hex.DecodeString(testCase.nameHex)
+			if err != nil {
+				t.Fatalf("error decoding expected hex string: %v", err)
+			}
+			name, err := helpers.SpamName(testCase.index)
+			if err != nil {
+				t.Errorf("error from SpamName: %v", err)
+			} else {
+				if !bytes.Equal(name, expectedName) {
+					t.Errorf("want\n%v\ngot\n%v\n",
+						hex.EncodeToString(expectedName),
+						hex.EncodeToString(name))
+				}
+			}
+		})
+	}
+}
+
 func TestExtendPolicy(t *testing.T) {
-	// TODO
+	cases := []struct {
+		name    string
+		hashHex string
+		rule    *policypb.Rule
+	}{
+		{
+			"eq",
+			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			ruleFromTextpb(`
+spam { index: 1 offset: 32 comparison: EQ operand: "foo" }
+			`),
+		},
+		{
+			"neq",
+			"f72f77ca6133727d1e6e763a264ef4c8d4b3adfc3f46500d437e5e5930609793",
+			ruleFromTextpb(`
+spam { index: 2 offset: 4 comparison: NEQ operand: "bar" }
+			`),
+		},
+		{
+			"unsigned gt",
+			"3adeeaf7e0c74b2cafd1d8f19c1f1a0b2b0aadb551f1c4de65d9b3bcae36e1ff",
+			ruleFromTextpb(`
+spam { index: 3 offset: 0 comparison: UNSIGNED_GT operand: "\000\000\000\004" }
+			`),
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			expectedPolicy, err := hex.DecodeString(testCase.hashHex)
+			if err != nil {
+				t.Fatalf("error decoding expected hex string: %v", err)
+			}
+			currentPolicy := make([]byte, 32)
+			policy, err := helpers.ExtendPolicy(crypto.SHA256, currentPolicy, testCase.rule)
+			if err != nil {
+				t.Errorf("error from ExtendPolicy: %v", err)
+			} else {
+				if !bytes.Equal(policy, expectedPolicy) {
+					t.Errorf("want\n%v\ngot\n%v\n",
+						hex.EncodeToString(expectedPolicy),
+						hex.EncodeToString(policy))
+				}
+			}
+		})
+	}
 }
 
 func TestCalculatePolicy(t *testing.T) {
-	// TODO
+	cases := []struct {
+		name    string
+		hashHex string
+		policy  *policypb.Policy
+	}{
+		{
+			"single spam",
+			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			policyFromTextpb(`
+rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } }
+			`),
+		},
+		{
+			"OR of 2 spams",
+			"8c16ab4649cd3e357080cb9f398d8a6b2bab30c586df997ef8e94c5ef65983d4",
+			policyFromTextpb(`
+or {
+	policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } }
+	policy { rule { spam { index: 2 offset: 4 comparison: NEQ operand: "bar" } } }
+}
+			`),
+		},
+		{
+			"unnecessary AND",
+			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			policyFromTextpb(`
+and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
+			`),
+		},
+		{
+			"two unnecessary ANDs",
+			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			policyFromTextpb(`
+and { policy { and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } } } }
+			`),
+		},
+		{
+			"unnecessary OR",
+			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			policyFromTextpb(`
+or { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
+			`),
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			expectedPolicy, err := hex.DecodeString(testCase.hashHex)
+			if err != nil {
+				t.Fatalf("error decoding expected hex string: %v", err)
+			}
+			policy, err := helpers.CalculatePolicy(testCase.policy, crypto.SHA256)
+			if err != nil {
+				t.Errorf("error from CalculatePolicy: %v", err)
+			} else {
+				if !bytes.Equal(policy, expectedPolicy) {
+					t.Errorf("want\n%v\ngot\n%v\n",
+						hex.EncodeToString(expectedPolicy),
+						hex.EncodeToString(policy))
+				}
+			}
+		})
+	}
 }
