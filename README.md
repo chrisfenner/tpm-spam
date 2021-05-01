@@ -127,7 +127,7 @@ version (e.g., the next 4 bytes of the spam interpreted as a uint). This would a
 for a particular kernel to still be unsealable by an updated kernel (signed by the same key), while
 allowing future secrets sealed to that kernel not to be unsealable by a rolled-back kernel.
 
-With AND/OR policy tree semantics (not yet discussed), a policy could be written to facilitate
+With [AND/OR policy trees](#policy-trees), a policy could be written to facilitate
 rotation of the keys used to sign software, for example
 * Either:
   * Kernel is signed by (the old key)
@@ -143,3 +143,39 @@ Because a system could have many spams, all stored separately, complex systems w
 of firmware (for example, BMC/NIC firmware), whose boot chain is less of a linear chain and more of
 a directed acyclical graph, can still be represented and secrets can be sealed to expected acceptable
 states of all measured parts.
+
+## Policy Trees
+Policy rules may be combined together into AND/OR trees described by [Policy](https://github.com/chrisfenner/tpm-spam/blob/eaa979f64342dbe45cd4938d87756ab382c8c19f/proto/policy.proto) protocol buffer messages.
+
+For example, suppose that spam index 1 is considered to be "the kernel measurement" and is measured as
+(32 bytes verification key hash || big-endian uint32 major version || big-endian uint32 minor version || 24 bytes reserved)
+Then, a policy to specify kernels signed by either key A (hashed as ) or key B (hashed as ) with version 5.10 or greater could look like:
+```
+and {
+  policy { or {
+    policy { rule {
+      spam { index: 1 offset: 0 comparison: EQ
+             operand: "\xba\x36\x73\x0b\x8c\xa1\xfb\x22\x0a\x1b\x35\x73\x6c\x00\x91\xcc\x9b\xd0\xec\xfa\x9d\x87\xc5\x2e\xd3\x75\x0f\x4c\xff\xa7\x44\x5b"
+      }
+    }}
+    policy { rule {
+      spam { index: 1 offset: 0 comparison: EQ
+             operand: "\x54\xad\xb8\x57\x5a\x89\x47\xc2\x89\xdd\x12\x23\xd5\x77\x74\x29\x76\x5b\x03\x17\xf5\xf4\xdc\x0d\xf0\xe7\xba\x8f\x44\x9d\x26\x03"
+      }
+    }}
+  }}
+  policy { or {
+    policy { and {
+      policy { rule {
+        spam { index: 1 offset: 32 comparison: UNSIGNED_GE operand: "\x00\x00\x00\x05" }
+      }}
+      policy { rule {
+        spam { index: 1 offset: 36 comparison: EQ operand: "\x00\x00\x00\x0a" }
+      }}
+    }}
+    policy { rule {
+      spam { index: 1 offset: 32 comparison: UNSIGNED_GT operand: "\x00\x00\x00\x05" }
+    }}
+  }}
+}
+```
