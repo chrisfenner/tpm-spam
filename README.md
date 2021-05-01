@@ -148,8 +148,8 @@ states of all measured parts.
 Policy rules may be combined together into AND/OR trees described by [Policy](https://github.com/chrisfenner/tpm-spam/blob/eaa979f64342dbe45cd4938d87756ab382c8c19f/proto/policy.proto) protocol buffer messages.
 
 For example, suppose that spam index 1 is considered to be "the kernel measurement" and is measured as
-(32 bytes verification key hash || big-endian uint32 major version || big-endian uint32 minor version || 24 bytes reserved)
-Then, a policy to specify kernels signed by either key A (hashed as ) or key B (hashed as ) with version 5.10 or greater could look like:
+`(32 bytes verification key hash || big-endian uint32 major version || big-endian uint32 minor version || 24 bytes reserved)`
+Then, a policy to specify kernels signed by either key A (hashed as `ba36730b8ca1fb220a1b35736c0091cc9bd0ecfa9d87c52ed3750f4cffa7445b`) or key B (hashed as `54adb8575a8947c289dd1223d5777429765b0317f5f4dc0df0e7ba8f449d2603`) with version 5.10 or greater could look like:
 ```
 and {
   policy { or {
