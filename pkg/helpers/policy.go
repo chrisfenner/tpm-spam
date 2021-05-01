@@ -108,9 +108,14 @@ func SpamTemplate(index uint32) (*tpm2.NVPublic, error) {
 	}, nil
 }
 
-// spamName returns the TPM2B_NAME for a spam NV index.
-func spamName(index uint32, alg crypto.Hash) ([]byte, error) {
-	packed, err := tpmutil.Pack(SpamTemplate(index))
+// SpamName returns the TPM2B_NAME for a spam NV index.
+func SpamName(index uint32) ([]byte, error) {
+	alg := crypto.SHA256
+	template, err := SpamTemplate(index)
+	if err != nil {
+		return nil, err
+	}
+	packed, err := tpmutil.Pack(template)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +128,15 @@ func spamName(index uint32, alg crypto.Hash) ([]byte, error) {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	if err = binary.Write(&buf, binary.BigEndian, tpmAlg); err != nil {
+	// A TPM2B_NAME is a sized buffer containing (alg ID || digest)
+	hdr := struct {
+		length uint16
+		alg    tpm2.Algorithm
+	}{
+		length: uint16(alg.Size() + 2),
+		alg:    tpmAlg,
+	}
+	if err = binary.Write(&buf, binary.BigEndian, hdr); err != nil {
 		return nil, err
 	}
 	if _, err = buf.Write(hash); err != nil {
@@ -134,15 +147,15 @@ func spamName(index uint32, alg crypto.Hash) ([]byte, error) {
 
 // extendSpamPolicy calculates the policy hash for a SpamRule (which is a type of TPM2_PolicyNV)
 func extendSpamPolicy(currentPolicy []byte, rule *policypb.SpamRule, alg crypto.Hash) ([]byte, error) {
-	args, err := HashItems(alg, rule.Operand, rule.Offset, uint16(rule.Comparison))
+	args, err := HashItems(alg, rule.Operand, uint16(rule.Offset), uint16(rule.Comparison))
 	if err != nil {
 		return nil, fmt.Errorf("could not calculate args hash: %w", err)
 	}
-	name, err := spamName(rule.Index, alg)
+	name, err := SpamName(rule.Index)
 	if err != nil {
 		return nil, fmt.Errorf("could not calculate NV index name: %w", err)
 	}
-	return HashItems(alg, currentPolicy, alg, uint32(0x149), args, name)
+	return HashItems(alg, currentPolicy, uint32(0x149), args, name)
 }
 
 // ExtendPolicy calculates the policy hash for a Rule, given a starting policy.
@@ -190,7 +203,14 @@ func policyChildren(t PolicyHashTree, index int) [][]byte {
 func internalPolicy(policy *[]byte, t PolicyHashTree, index int, alg crypto.Hash) error {
 	children := policyChildren(t, index)
 	result := make([]byte, alg.Size())
-	result, err := HashItems(alg, result, uint32(0x171), children)
+	args := []interface{}{
+		result, uint32(0x171),
+	}
+	// TODO: clean up this copy that gets around inability to cast [][]byte to []interface{}
+	for _, child := range children {
+		args = append(args, child)
+	}
+	result, err := HashItems(alg, args...)
 	if err != nil {
 		return err
 	}
