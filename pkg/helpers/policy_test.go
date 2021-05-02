@@ -427,3 +427,172 @@ or { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } 
 		})
 	}
 }
+
+// Test a bunch of policies that should all be satisfied with the same simple state.
+func TestSatisfiablePolicies(t *testing.T) {
+	tpmState := helpers.TpmState{
+		Spams: map[uint32]helpers.SpamContents{
+			1: [64]byte{
+				0, 1, 2, 3, 4, 5, 6, 7,
+				8, 9, 10, 11, 12, 13, 14, 15,
+				16, 17, 18, 19, 20, 21, 22, 23,
+				24, 25, 26, 27, 28, 29, 30, 31,
+				32, 33, 34, 35, 36, 37, 38, 39,
+				40, 41, 42, 43, 44, 45, 46, 47,
+				48, 49, 50, 51, 52, 53, 54, 55,
+				56, 57, 58, 59, 60, 61, 62, 63,
+			},
+		},
+	}
+	cases := []struct {
+		name  string
+		index int
+		rules helpers.NormalizedPolicy
+	}{
+		{
+			"simple EQ",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: EQ operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"simple NEQ",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: NEQ operand: "\x00\x01\x02\x04" }
+					`),
+				},
+			},
+		},
+		{
+			"simple SIGNED_GT",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: SIGNED_GT operand: "\x80\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"simple UNSIGNED_GT",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: UNSIGNED_GT operand: "\x00\x01\x02\x02" }
+					`),
+				},
+			},
+		},
+		{
+			"simple SIGNED_LT",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: SIGNED_LT operand: "\x00\x01\x02\x04" }
+					`),
+				},
+			},
+		},
+		{
+			"simple UNSIGNED_LT",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: UNSIGNED_LT operand: "\x00\x01\x02\x04" }
+					`),
+				},
+			},
+		},
+		{
+			"simple SIGNED_GE",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: SIGNED_GE operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"simple UNSIGNED_GE",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: UNSIGNED_GE operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"simple SIGNED_LE",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: SIGNED_GE operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"simple UNSIGNED_LE",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: UNSIGNED_LE operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"simple BITSET",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: BITSET operand: "\x00\x00\x02\x00" }
+					`),
+				},
+			},
+		},
+		{
+			"simple BITCLEAR",
+			0,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: BITCLEAR operand: "\xFF\x00\x01\x00" }
+					`),
+				},
+			},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			idx, err := helpers.FirstSatisfiable(testCase.rules, &tpmState)
+			if err != nil {
+				t.Errorf("got error from FirstSatisfiable: %v", err)
+			} else {
+				if *idx != testCase.index {
+					t.Errorf("want %v got %v", testCase.index, *idx)
+				}
+			}
+		})
+	}
+}
