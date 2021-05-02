@@ -9,6 +9,7 @@ import (
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
+	"math/big"
 )
 
 // NormalizedPolicy represents the normalized OR/AND list-of-lists form of a policy.
@@ -305,4 +306,182 @@ func normalizeOr(or *policypb.Or) ([][]*policypb.Rule, error) {
 		res = append(res, normalized...)
 	}
 	return res, nil
+}
+
+// SpamContents represents the contents of a spam.
+type SpamContents [64]byte
+
+// TpmState represents the spam policy-relevant current state in the TPM.
+type TpmState struct {
+	Spams map[uint32]SpamContents
+}
+
+// FirstSatisfiable finds the index of the first satisfiable policy branch, or
+// returns an error if no policy was satisfiable.
+func FirstSatisfiable(policies NormalizedPolicy, currentState *TpmState) (*int, error) {
+	for i, policy := range policies {
+		for _, rule := range policy {
+			if !isSatisfiable(rule, currentState) {
+				continue
+			}
+		}
+		return &i, nil
+	}
+	return nil, fmt.Errorf("unsatisfiable spam policy")
+}
+
+// isSatisfiable returns whether a rule would pass if enforced by the TPM whose
+// current state is described by currentState.
+func isSatisfiable(rule *policypb.Rule, currentState *TpmState) bool {
+	switch x := rule.Assertion.(type) {
+	case *policypb.Rule_Spam:
+		return isSpamSatisfiable(x.Spam, currentState)
+	default:
+		return false
+	}
+}
+
+// isSpamSatisfiable returns whether a spam rule would pass if enforced by the
+// TPM whose current state is described by currentState.
+func isSpamSatisfiable(rule *policypb.SpamRule, currentState *TpmState) bool {
+	if rule.Offset+uint32(len(rule.Operand)) > 64 {
+		// not a valid policy
+		return false
+	}
+	contents, ok := currentState.Spams[rule.Index]
+	if !ok {
+		// The indicated spam is not written so it cannot be compared.
+		// N.B.: If the indicated spam is defined but not written,
+		// anybody could write anything to it and satisfy the policy.
+		return false
+	}
+	spamOperand := contents[rule.Offset:len(rule.Operand)]
+	switch rule.Comparison {
+	case policypb.Comparison_EQ:
+		return isSpamEq(spamOperand, rule.Operand)
+	case policypb.Comparison_NEQ:
+		return isSpamNeq(spamOperand, rule.Operand)
+	case policypb.Comparison_SIGNED_GT:
+		return isSpamSignedGt(spamOperand, rule.Operand)
+	case policypb.Comparison_UNSIGNED_GT:
+		return isSpamUnsignedGt(spamOperand, rule.Operand)
+	case policypb.Comparison_SIGNED_LT:
+		return isSpamSignedLt(spamOperand, rule.Operand)
+	case policypb.Comparison_UNSIGNED_LT:
+		return isSpamUnsignedLt(spamOperand, rule.Operand)
+	case policypb.Comparison_SIGNED_GE:
+		return isSpamSignedGe(spamOperand, rule.Operand)
+	case policypb.Comparison_UNSIGNED_GE:
+		return isSpamUnsignedGe(spamOperand, rule.Operand)
+	case policypb.Comparison_SIGNED_LE:
+		return isSpamSignedLe(spamOperand, rule.Operand)
+	case policypb.Comparison_UNSIGNED_LE:
+		return isSpamUnsignedLe(spamOperand, rule.Operand)
+	case policypb.Comparison_BITSET:
+		return isSpamBitSet(spamOperand, rule.Operand)
+	case policypb.Comparison_BITCLEAR:
+		return isSpamBitClear(spamOperand, rule.Operand)
+	}
+	// Unrecognized comparison
+	return false
+}
+
+// signedBig transforms a signed 2's complement big integer for unsigned
+// Cmp operations by adding 2^(bitlength(a)) if the number is positive.
+func signedBig(a []byte) *big.Int {
+	result := big.NewInt(0)
+	if len(a) > 0 {
+		// Check sign bit and prepend 0x01 if positive
+		if (a[0] >> 7) == 0 {
+			a = append([]byte{0x01}, a...)
+		}
+		result.SetBytes(a)
+	}
+	return result
+}
+
+func isSpamEq(a, b []byte) bool {
+	return bytes.Equal(a, b)
+}
+
+func isSpamNeq(a, b []byte) bool {
+	return !isSpamEq(a, b)
+}
+
+func isSpamSignedGt(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	bigA := signedBig(a)
+	bigB := signedBig(b)
+	return bigA.Cmp(bigB) > 0
+}
+
+func isSpamUnsignedGt(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	bigA := big.NewInt(0).SetBytes(a)
+	bigB := big.NewInt(0).SetBytes(b)
+	return bigA.Cmp(bigB) > 0
+}
+
+func isSpamSignedLt(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	bigA := signedBig(a)
+	bigB := signedBig(b)
+	return bigA.Cmp(bigB) < 0
+}
+
+func isSpamUnsignedLt(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	bigA := big.NewInt(0).SetBytes(a)
+	bigB := big.NewInt(0).SetBytes(b)
+	return bigA.Cmp(bigB) < 0
+}
+
+func isSpamSignedGe(a, b []byte) bool {
+	return !isSpamSignedLt(a, b)
+}
+
+func isSpamUnsignedGe(a, b []byte) bool {
+	return !isSpamUnsignedLt(a, b)
+}
+
+func isSpamSignedLe(a, b []byte) bool {
+	return !isSpamUnsignedGt(a, b)
+}
+
+func isSpamUnsignedLe(a, b []byte) bool {
+	return !isSpamUnsignedGt(a, b)
+}
+
+func isSpamBitSet(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	// BITSET: all bits set in B are set in A
+	for i := range a {
+		if (a[i] & b[i]) != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func isSpamBitClear(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	// BITCLEAR: all bits set in B are clear in A
+	for i := range a {
+		if (a[i] & b[i]) != 0 {
+			return false
+		}
+	}
+	return true
 }
