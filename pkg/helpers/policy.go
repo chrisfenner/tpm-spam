@@ -9,6 +9,7 @@ import (
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/google/go-tpm/tpm2"
 	"github.com/google/go-tpm/tpmutil"
+	"io"
 	"math/big"
 )
 
@@ -47,7 +48,7 @@ func (norm NormalizedPolicy) CalculateTree(alg crypto.Hash) (PolicyHashTree, err
 }
 
 // leaf returns a pointer to the given leaf in the tree.
-func (t PolicyHashTree) leaf(i int) (*[]byte, error) {
+func (t PolicyHashTree) leafIndex(i int) (*int, error) {
 	internal, err := eighttree.InternalCountFromTotal(len(t))
 	if err != nil {
 		return nil, fmt.Errorf("invalid tree: %w", err)
@@ -55,7 +56,15 @@ func (t PolicyHashTree) leaf(i int) (*[]byte, error) {
 	if (internal + i) >= len(t) {
 		return nil, fmt.Errorf("policy tree does not have %d leaves", i)
 	}
-	return &t[internal+i], nil
+	result := internal + i
+	return &result, nil
+}
+func (t PolicyHashTree) leaf(i int) (*[]byte, error) {
+	idx, err := t.leafIndex(i)
+	if err != nil {
+		return nil, err
+	}
+	return &t[*idx], nil
 }
 
 func SpamPolicy(alg crypto.Hash) ([]byte, error) {
@@ -184,7 +193,7 @@ func leafPolicy(policy *[]byte, rules []*policypb.Rule, alg crypto.Hash) error {
 	return nil
 }
 
-// policyChildren returns the digest of all the children of the given internal node. If the node is a leaf node, returns nil.
+// policyChildren returns the digests of all the children of the given internal node. If the node is a leaf node, returns nil.
 func policyChildren(t PolicyHashTree, index int) [][]byte {
 	start := eighttree.ChildIndex(index, 0)
 	if start >= len(t) {
@@ -316,6 +325,42 @@ type TpmState struct {
 	Spams map[uint32]SpamContents
 }
 
+// CurrentTpmState queries the TPM for its current spam-relevant state.
+// TODO: Clean up this function, it has a lot of magic numbers and casts.
+func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
+	spams := make(map[uint32]SpamContents)
+	for handle := uint32(0x017F0000); handle < uint32(0x01800000); handle++ {
+		handles, _, err := tpm2.GetCapability(tpm, tpm2.CapabilityHandles, 8, handle)
+		if err != nil {
+			return nil, err
+		}
+		for _, h := range handles {
+			hdl, ok := h.(tpmutil.Handle)
+			if !ok {
+				return nil, fmt.Errorf("invalid data from GetCapability: %v", h)
+			}
+			if uint32(hdl) > handle {
+				handle = uint32(hdl)
+			}
+			if uint32(hdl) >= uint32(0x01800000) {
+				continue
+			}
+			data, err := tpm2.NVReadEx(tpm, hdl, hdl, "", 64)
+			if err != nil || len(data) != 64 {
+				// Don't worry about this one
+				continue
+			}
+			spamIndex := uint32(hdl) - uint32(0x017F0000)
+			var spam SpamContents
+			copy(spam[:], data)
+			spams[spamIndex] = spam
+		}
+	}
+	return &TpmState{
+		Spams: spams,
+	}, nil
+}
+
 // FirstSatisfiable finds the index of the first satisfiable policy branch, or
 // returns an error if no policy was satisfiable.
 func FirstSatisfiable(policies NormalizedPolicy, currentState *TpmState) (*int, error) {
@@ -328,6 +373,61 @@ func FirstSatisfiable(policies NormalizedPolicy, currentState *TpmState) (*int, 
 		return &i, nil
 	}
 	return nil, fmt.Errorf("unsatisfiable spam policy")
+}
+
+func spamPolicyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.SpamRule) error {
+	// TODO: Implement PolicyNV, and upstream it to go-tpm.
+	return fmt.Errorf("unimplemented")
+}
+
+func policyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.Rule) error {
+	switch x := r.Assertion.(type) {
+	case *policypb.Rule_Spam:
+		return spamPolicyRule(tpm, s, x.Spam)
+	default:
+		return fmt.Errorf("unrecognized rule type: %v", x)
+	}
+}
+
+// RunPolicy runs the satisfied TPM policy in the given session handle.
+func RunPolicy(tpm io.ReadWriter, s tpmutil.Handle, p *policypb.Policy) error {
+	norm, err := Normalize(p)
+	if err != nil {
+		return err
+	}
+	state, err := CurrentTpmState(tpm)
+	if err != nil {
+		return err
+	}
+	idx, err := FirstSatisfiable(norm, state)
+	if err != nil {
+		return err
+	}
+	tree, err := norm.CalculateTree(crypto.SHA256)
+	if err != nil {
+		return err
+	}
+	currentIndex, err := tree.leafIndex(*idx)
+	if err != nil {
+		return err
+	}
+	for i, rule := range norm[*idx] {
+		if err = policyRule(tpm, s, rule); err != nil {
+			return fmt.Errorf("on normalized branch %d, rule %d: %w", *idx, i, err)
+		}
+	}
+	for *currentIndex != 0 {
+		*currentIndex = eighttree.ParentIndex(*currentIndex)
+		ors := policyChildren(tree, *currentIndex)
+		digests := tpm2.TPMLDigest{}
+		for _, or := range ors {
+			digests.Digests = append(digests.Digests, tpmutil.U16Bytes(or))
+		}
+		if err = tpm2.PolicyOr(tpm, s, digests); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // isSatisfiable returns whether a rule would pass if enforced by the TPM whose
