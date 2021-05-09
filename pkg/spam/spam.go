@@ -3,8 +3,8 @@ package spam
 
 import (
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
-	_ "github.com/google/go-tpm/tpm2"
-	"github.com/google/go-tpm/tpmutil"
+	_ "github.com/chrisfenner/go-tpm/tpm2"
+	"github.com/chrisfenner/go-tpm/tpmutil"
 	"io"
 )
 

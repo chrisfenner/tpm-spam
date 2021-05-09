@@ -8,8 +8,8 @@ import (
 	"github.com/chrisfenner/tpm-spam/pkg/helpers"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/golang/protobuf/proto"
-	"github.com/google/go-tpm/tpm2"
-	"github.com/google/go-tpm/tpmutil"
+	"github.com/chrisfenner/go-tpm/tpm2"
+	"github.com/chrisfenner/go-tpm/tpmutil"
 	"google.golang.org/protobuf/encoding/prototext"
 	"testing"
 )
