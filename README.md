@@ -167,14 +167,14 @@ and {
   policy { or {
     policy { and {
       policy { rule {
-        spam { index: 1 offset: 32 comparison: UNSIGNED_GE operand: "\x00\x00\x00\x05" }
+        spam { index: 1 offset: 32 comparison: GTE operand: "\x00\x00\x00\x05" }
       }}
       policy { rule {
         spam { index: 1 offset: 36 comparison: EQ operand: "\x00\x00\x00\x0a" }
       }}
     }}
     policy { rule {
-      spam { index: 1 offset: 32 comparison: UNSIGNED_GT operand: "\x00\x00\x00\x05" }
+      spam { index: 1 offset: 32 comparison: GT operand: "\x00\x00\x00\x05" }
     }}
   }}
 }

@@ -19,20 +19,16 @@ message Policy {
 }
 
 // A Comparison operator describes how to match against a given value.
-// All integer comparisons are big-endian, and signed comparisons are 2's-complement.
+// All integer comparisons are big-endian, unsigned.
 enum Comparison {
   EQ = 0;
   NEQ = 1;
-  SIGNED_GT = 2;
-  UNSIGNED_GT = 3;
-  SIGNED_LT = 4;
-  UNSIGNED_LT = 5;
-  SIGNED_GE = 6;
-  UNSIGNED_GE = 7;
-  SIGNED_LE = 8;
-  UNSIGNED_LE = 9;
-  BITSET = 10;
-  BITCLEAR = 11;
+  GT = 2;
+  GTE = 3;
+  LT = 4;
+  LTE = 5;
+  BITSET = 6;
+  BITCLEAR = 7;
 }
 
 // A Spam rule asserts a matcher against a sub-array of a spam.

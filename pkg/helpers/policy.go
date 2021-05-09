@@ -72,9 +72,45 @@ func SpamPolicy(alg crypto.Hash) ([]byte, error) {
 	return HashItems(alg, result, uint32(0x18f), uint8(0))
 }
 
-func SpamTemplate(index uint32) (*tpm2.NVPublic, error) {
+// SpamHandle returns the TPM NV index associated with the given spam handle.
+func SpamHandle(index uint32) (*tpmutil.Handle, error) {
 	if index > 0xffff {
 		return nil, fmt.Errorf("invalid spam index %d (must be a uint16)", index)
+	}
+	result := tpmutil.Handle(0x017F0000 + index)
+	return &result, nil
+}
+
+// SpamOperation returns the TPM_EO equivalent of the given spam comparison.
+func SpamOperation(comp policypb.Comparison) (*tpm2.EO, error) {
+	var result tpm2.EO
+	switch comp {
+	case policypb.Comparison_EQ:
+		result = tpm2.EOEq
+	case policypb.Comparison_NEQ:
+		result = tpm2.EONeq
+	case policypb.Comparison_GT:
+		result = tpm2.EOUnsignedGt
+	case policypb.Comparison_GTE:
+		result = tpm2.EOUnsignedGe
+	case policypb.Comparison_LT:
+		result = tpm2.EOUnsignedLt
+	case policypb.Comparison_LTE:
+		result = tpm2.EOUnsignedLe
+	case policypb.Comparison_BITSET:
+		result = tpm2.EOBitSet
+	case policypb.Comparison_BITCLEAR:
+		result = tpm2.EOBitClear
+	default:
+		return nil, fmt.Errorf("invalid comparison %v", comp)
+	}
+	return &result, nil
+}
+
+func SpamTemplate(index uint32) (*tpm2.NVPublic, error) {
+	handle, err := SpamHandle(index)
+	if err != nil {
+		return nil, err
 	}
 	policy, err := SpamPolicy(crypto.SHA256)
 	if err != nil {
@@ -110,7 +146,7 @@ func SpamTemplate(index uint32) (*tpm2.NVPublic, error) {
 		tpm2.AttrClearSTClear |
 		tpm2.AttrPlatformCreate
 	return &tpm2.NVPublic{
-		NVIndex:    tpmutil.Handle(0x017F0000 + index),
+		NVIndex:    *handle,
 		NameAlg:    tpm2.AlgSHA256,
 		Attributes: attr,
 		AuthPolicy: tpmutil.U16Bytes(policy),
@@ -157,7 +193,11 @@ func SpamName(index uint32) ([]byte, error) {
 
 // extendSpamPolicy calculates the policy hash for a SpamRule (which is a type of TPM2_PolicyNV)
 func extendSpamPolicy(currentPolicy []byte, rule *policypb.SpamRule, alg crypto.Hash) ([]byte, error) {
-	args, err := HashItems(alg, rule.Operand, uint16(rule.Offset), uint16(rule.Comparison))
+	operation, err := SpamOperation(rule.Comparison)
+	if err != nil {
+		return nil, err
+	}
+	args, err := HashItems(alg, rule.Operand, uint16(rule.Offset), *operation)
 	if err != nil {
 		return nil, fmt.Errorf("could not calculate args hash: %w", err)
 	}
@@ -376,8 +416,23 @@ func FirstSatisfiable(policies NormalizedPolicy, currentState *TpmState) (*int, 
 }
 
 func spamPolicyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.SpamRule) error {
-	// TODO: Implement PolicyNV, and upstream it to go-tpm.
-	return fmt.Errorf("unimplemented")
+	handle, err := SpamHandle(r.Index)
+	if err != nil {
+		return err
+	}
+	operand := tpmutil.U16Bytes(r.Operand)
+	offset := uint16(r.Offset)
+	if uint32(offset) != r.Offset {
+		return fmt.Errorf("invalid offset: %v", r.Offset)
+	}
+	if int(offset) + len(operand) > 64 {
+		return fmt.Errorf("invalid offset and operand length: %v bytes starting at %v", len(operand), r.Offset)
+	}
+	operation, err := SpamOperation(r.Comparison)
+	if err != nil {
+		return err
+	}
+	return tpm2.PolicyNV(tpm, *handle, *handle, s, "", operand, offset, *operation)
 }
 
 func policyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.Rule) error {
@@ -461,22 +516,14 @@ func isSpamSatisfiable(rule *policypb.SpamRule, currentState *TpmState) bool {
 		return isSpamEq(spamOperand, rule.Operand)
 	case policypb.Comparison_NEQ:
 		return isSpamNeq(spamOperand, rule.Operand)
-	case policypb.Comparison_SIGNED_GT:
-		return isSpamSignedGt(spamOperand, rule.Operand)
-	case policypb.Comparison_UNSIGNED_GT:
-		return isSpamUnsignedGt(spamOperand, rule.Operand)
-	case policypb.Comparison_SIGNED_LT:
-		return isSpamSignedLt(spamOperand, rule.Operand)
-	case policypb.Comparison_UNSIGNED_LT:
-		return isSpamUnsignedLt(spamOperand, rule.Operand)
-	case policypb.Comparison_SIGNED_GE:
-		return isSpamSignedGe(spamOperand, rule.Operand)
-	case policypb.Comparison_UNSIGNED_GE:
-		return isSpamUnsignedGe(spamOperand, rule.Operand)
-	case policypb.Comparison_SIGNED_LE:
-		return isSpamSignedLe(spamOperand, rule.Operand)
-	case policypb.Comparison_UNSIGNED_LE:
-		return isSpamUnsignedLe(spamOperand, rule.Operand)
+	case policypb.Comparison_GT:
+		return isSpamGt(spamOperand, rule.Operand)
+	case policypb.Comparison_LT:
+		return isSpamLt(spamOperand, rule.Operand)
+	case policypb.Comparison_GTE:
+		return isSpamGte(spamOperand, rule.Operand)
+	case policypb.Comparison_LTE:
+		return isSpamLte(spamOperand, rule.Operand)
 	case policypb.Comparison_BITSET:
 		return isSpamBitSet(spamOperand, rule.Operand)
 	case policypb.Comparison_BITCLEAR:
@@ -508,16 +555,7 @@ func isSpamNeq(a, b []byte) bool {
 	return !isSpamEq(a, b)
 }
 
-func isSpamSignedGt(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	bigA := signedBig(a)
-	bigB := signedBig(b)
-	return bigA.Cmp(bigB) > 0
-}
-
-func isSpamUnsignedGt(a, b []byte) bool {
+func isSpamGt(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -526,16 +564,7 @@ func isSpamUnsignedGt(a, b []byte) bool {
 	return bigA.Cmp(bigB) > 0
 }
 
-func isSpamSignedLt(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	bigA := signedBig(a)
-	bigB := signedBig(b)
-	return bigA.Cmp(bigB) < 0
-}
-
-func isSpamUnsignedLt(a, b []byte) bool {
+func isSpamLt(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -544,20 +573,12 @@ func isSpamUnsignedLt(a, b []byte) bool {
 	return bigA.Cmp(bigB) < 0
 }
 
-func isSpamSignedGe(a, b []byte) bool {
-	return !isSpamSignedLt(a, b)
+func isSpamGte(a, b []byte) bool {
+	return !isSpamLt(a, b)
 }
 
-func isSpamUnsignedGe(a, b []byte) bool {
-	return !isSpamUnsignedLt(a, b)
-}
-
-func isSpamSignedLe(a, b []byte) bool {
-	return !isSpamUnsignedGt(a, b)
-}
-
-func isSpamUnsignedLe(a, b []byte) bool {
-	return !isSpamUnsignedGt(a, b)
+func isSpamLte(a, b []byte) bool {
+	return !isSpamGt(a, b)
 }
 
 func isSpamBitSet(a, b []byte) bool {
