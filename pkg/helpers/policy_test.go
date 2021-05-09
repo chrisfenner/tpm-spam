@@ -335,10 +335,10 @@ spam { index: 2 offset: 4 comparison: NEQ operand: "bar" }
 			`),
 		},
 		{
-			"unsigned gt",
+			"gt",
 			"3adeeaf7e0c74b2cafd1d8f19c1f1a0b2b0aadb551f1c4de65d9b3bcae36e1ff",
 			ruleFromTextpb(`
-spam { index: 3 offset: 0 comparison: UNSIGNED_GT operand: "\000\000\000\004" }
+spam { index: 3 offset: 0 comparison: GT operand: "\000\000\000\004" }
 			`),
 		},
 	}
@@ -472,89 +472,45 @@ spam { index: 1 offset: 0 comparison: NEQ operand: "\x00\x01\x02\x04" }
 			},
 		},
 		{
-			"simple SIGNED_GT",
+			"simple GT",
 			0,
 			[][]*policypb.Rule{
 				{
 					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: SIGNED_GT operand: "\x80\x01\x02\x03" }
+spam { index: 1 offset: 0 comparison: GT operand: "\x00\x01\x02\x02" }
 					`),
 				},
 			},
 		},
 		{
-			"simple UNSIGNED_GT",
+			"simple LT",
 			0,
 			[][]*policypb.Rule{
 				{
 					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: UNSIGNED_GT operand: "\x00\x01\x02\x02" }
+spam { index: 1 offset: 0 comparison: LT operand: "\x00\x01\x02\x04" }
 					`),
 				},
 			},
 		},
 		{
-			"simple SIGNED_LT",
+			"simple GTE",
 			0,
 			[][]*policypb.Rule{
 				{
 					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: SIGNED_LT operand: "\x00\x01\x02\x04" }
+spam { index: 1 offset: 0 comparison: GTE operand: "\x00\x01\x02\x03" }
 					`),
 				},
 			},
 		},
 		{
-			"simple UNSIGNED_LT",
+			"simple LTE",
 			0,
 			[][]*policypb.Rule{
 				{
 					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: UNSIGNED_LT operand: "\x00\x01\x02\x04" }
-					`),
-				},
-			},
-		},
-		{
-			"simple SIGNED_GE",
-			0,
-			[][]*policypb.Rule{
-				{
-					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: SIGNED_GE operand: "\x00\x01\x02\x03" }
-					`),
-				},
-			},
-		},
-		{
-			"simple UNSIGNED_GE",
-			0,
-			[][]*policypb.Rule{
-				{
-					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: UNSIGNED_GE operand: "\x00\x01\x02\x03" }
-					`),
-				},
-			},
-		},
-		{
-			"simple SIGNED_LE",
-			0,
-			[][]*policypb.Rule{
-				{
-					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: SIGNED_GE operand: "\x00\x01\x02\x03" }
-					`),
-				},
-			},
-		},
-		{
-			"simple UNSIGNED_LE",
-			0,
-			[][]*policypb.Rule{
-				{
-					ruleFromTextpb(`
-spam { index: 1 offset: 0 comparison: UNSIGNED_LE operand: "\x00\x01\x02\x03" }
+spam { index: 1 offset: 0 comparison: LTE operand: "\x00\x01\x02\x03" }
 					`),
 				},
 			},
