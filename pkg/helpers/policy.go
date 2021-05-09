@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
-	"github.com/google/go-tpm/tpm2"
-	"github.com/google/go-tpm/tpmutil"
+	"github.com/chrisfenner/go-tpm/tpm2"
+	"github.com/chrisfenner/go-tpm/tpmutil"
 	"io"
 	"math/big"
 )
