@@ -537,14 +537,121 @@ spam { index: 1 offset: 0 comparison: BITCLEAR operand: "\xFF\x00\x01\x00" }
 				},
 			},
 		},
+		{
+			"unsatisfiable EQ",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: EQ operand: "\x00\x01\x02\x04" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable then satisfiable",
+			1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: EQ operand: "\x00\x01\x02\x04" }
+					`),
+				},
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: EQ operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable NEQ",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: NEQ operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable GT",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: GT operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable LT",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: LT operand: "\x00\x01\x02\x03" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable GTE",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: GTE operand: "\x00\x01\x02\x04" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable LTE",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: LTE operand: "\x00\x01\x02\x02" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable BITSET",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: BITSET operand: "\x00\x00\x02\x05" }
+					`),
+				},
+			},
+		},
+		{
+			"unsatisfiable BITCLEAR",
+			-1,
+			[][]*policypb.Rule{
+				{
+					ruleFromTextpb(`
+spam { index: 1 offset: 0 comparison: BITCLEAR operand: "\xFF\x00\x01\x01" }
+					`),
+				},
+			},
+		},
 	}
 
 	for _, testCase := range cases {
 		t.Run(testCase.name, func(t *testing.T) {
 			idx, err := helpers.FirstSatisfiable(testCase.rules, &tpmState)
-			if err != nil {
+			wantedErr := testCase.index < 0
+			if !wantedErr && err != nil {
 				t.Errorf("got error from FirstSatisfiable: %v", err)
-			} else {
+			} else if wantedErr && err == nil {
+				t.Errorf("wanted error from FirstSatisfiable, got %d, nil", *idx)
+			} else if !wantedErr && err == nil {
 				if *idx != testCase.index {
 					t.Errorf("want %v got %v", testCase.index, *idx)
 				}
