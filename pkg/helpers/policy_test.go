@@ -5,14 +5,23 @@ import (
 	"crypto"
 	"encoding/hex"
 	"fmt"
-	"github.com/chrisfenner/tpm-spam/pkg/helpers"
-	"github.com/chrisfenner/tpm-spam/pkg/policypb"
-	"github.com/golang/protobuf/proto"
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
+	"github.com/chrisfenner/tpm-spam/pkg/helpers"
+	"github.com/chrisfenner/tpm-spam/pkg/policypb"
+	"github.com/chrisfenner/tpm-spam/pkg/spam"
+	"github.com/golang/protobuf/proto"
+	"github.com/google/go-tpm-tools/simulator"
 	"google.golang.org/protobuf/encoding/prototext"
+	"io"
+	"math/rand"
 	"testing"
+	"time"
 )
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
 
 func policyFromTextpb(textpb string) *policypb.Policy {
 	var policy policypb.Policy
@@ -282,16 +291,16 @@ func TestSpamTemplate(t *testing.T) {
 
 func TestSpamName(t *testing.T) {
 	cases := []struct {
-		index   uint32
+		index   uint16
 		nameHex string
 	}{
 		{
 			1,
-			"0022000bfe198d7f6f167df8c554d5c075715fa56dcf39c29e9acad2f7bdaf36dbecbb59",
+			"000bf1f81900d5cc426fdf139d1cbf3e3c3edb67b26740e8a0313b1e4cfec503016e",
 		},
 		{
 			3,
-			"0022000b8c1f794ff7510373a142b6b7bdcfc120541aab0486941b31c90f0f8109ff4626",
+			"000b21a0b88cb141a41bf1fe66e6daf41e85e476c180dbceaeb4085b5e8e613b7db0",
 		},
 	}
 	for i, testCase := range cases {
@@ -322,21 +331,21 @@ func TestExtendPolicy(t *testing.T) {
 	}{
 		{
 			"eq",
-			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
 			ruleFromTextpb(`
 spam { index: 1 offset: 32 comparison: EQ operand: "foo" }
 			`),
 		},
 		{
 			"neq",
-			"f72f77ca6133727d1e6e763a264ef4c8d4b3adfc3f46500d437e5e5930609793",
+			"18d46f2acbf4519f6f0efb1ac6f58967a565d4c6fa53516e7597066fe2f0716a",
 			ruleFromTextpb(`
 spam { index: 2 offset: 4 comparison: NEQ operand: "bar" }
 			`),
 		},
 		{
 			"gt",
-			"3adeeaf7e0c74b2cafd1d8f19c1f1a0b2b0aadb551f1c4de65d9b3bcae36e1ff",
+			"d1c47217845f7e69fc9edf2fa3b6a91cc78c3df98b40eb9bd37f742ecea53d8d",
 			ruleFromTextpb(`
 spam { index: 3 offset: 0 comparison: GT operand: "\000\000\000\004" }
 			`),
@@ -371,14 +380,14 @@ func TestCalculatePolicy(t *testing.T) {
 	}{
 		{
 			"single spam",
-			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
 			policyFromTextpb(`
 rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } }
 			`),
 		},
 		{
 			"OR of 2 spams",
-			"8c16ab4649cd3e357080cb9f398d8a6b2bab30c586df997ef8e94c5ef65983d4",
+			"82f97b5a589664eef101b9e6fcb69bca388bb71299494202154d0eb206f190ed",
 			policyFromTextpb(`
 or {
 	policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } }
@@ -388,21 +397,21 @@ or {
 		},
 		{
 			"unnecessary AND",
-			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
 			policyFromTextpb(`
 and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
 			`),
 		},
 		{
 			"two unnecessary ANDs",
-			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
 			policyFromTextpb(`
 and { policy { and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } } } }
 			`),
 		},
 		{
 			"unnecessary OR",
-			"00c5763e28c8a900f345a3901f4bdccd07a992e62b2ac3203b8e1f9a15c01d5a",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
 			policyFromTextpb(`
 or { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
 			`),
@@ -654,6 +663,178 @@ spam { index: 1 offset: 0 comparison: BITCLEAR operand: "\xFF\x00\x01\x01" }
 			} else if !wantedErr && err == nil {
 				if *idx != testCase.index {
 					t.Errorf("want %v got %v", testCase.index, *idx)
+				}
+			}
+		})
+	}
+}
+
+func startTrialSession(tpm io.ReadWriter) (*tpmutil.Handle, error) {
+	handle, _, err := tpm2.StartAuthSession(
+		tpm,
+		tpm2.HandleNull,
+		tpm2.HandleNull,
+		make([]byte, 16),
+		nil,
+		tpm2.SessionTrial,
+		tpm2.AlgNull,
+		tpm2.AlgSHA256)
+	if err != nil {
+		return nil, err
+	}
+	return &handle, nil
+}
+
+func TestRuleHashing(t *testing.T) {
+	tpm, err := simulator.Get()
+	if err != nil {
+		t.Fatalf("could not connect to TPM simulator")
+	}
+
+	// Reference simulator is limited to 6 spams.
+	// Since writing a spam changes its name, write randomly to them all.
+	// Writing random data asserts that the actual contents (other than
+	// nvWritten state) do not matter to the policy.
+	for i := uint16(1); i <= 6; i++ {
+		if err := spam.Define(tpm, i, ""); err != nil {
+			t.Fatalf("could not define test spams: %v", err)
+		}
+		defer spam.Undefine(tpm, i, "")
+		data := [64]byte{}
+		if _, err := rand.Read(data[:]); err != nil {
+			t.Fatalf("could not generate random data: %v", err)
+		}
+		if err := spam.Write(tpm, i, data); err != nil {
+			t.Fatalf("could not write test spam: %v", err)
+		}
+	}
+
+	cases := []struct {
+		name  string
+		rules []*policypb.Rule
+	}{
+		{
+			"EQ",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 1 offset: 1 comparison: EQ operand: "frumious" }
+				`),
+			},
+		},
+		{
+			"NEQ",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 2 offset: 2 comparison: NEQ operand: "bandersnatch" }
+				`),
+			},
+		},
+		{
+			"GT",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 3 offset: 3 comparison: GT operand: "\x03" }
+				`),
+			},
+		},
+		{
+			"GTE",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 4 offset: 4 comparison: GTE operand: "\x03\x00" }
+				`),
+			},
+		},
+		{
+			"LT",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 5 offset: 5 comparison: LT operand: "\xff\xff\xff" }
+				`),
+			},
+		},
+		{
+			"LTE",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 6 offset: 6 comparison: LTE operand: "\xff\xff\xff\xee" }
+				`),
+			},
+		},
+		{
+			"BITSET",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 1 offset: 1 comparison: BITSET operand: "\x01\x01" }
+				`),
+			},
+		},
+		{
+			"BITCLEAR",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 1 offset: 1 comparison: BITCLEAR operand: "\xa0\xa0" }
+				`),
+			},
+		},
+		{
+			"one of everything",
+			[]*policypb.Rule{
+				ruleFromTextpb(`
+spam { index: 1 offset: 1 comparison: EQ operand: "frumious" }
+				`),
+				ruleFromTextpb(`
+spam { index: 2 offset: 2 comparison: NEQ operand: "bandersnatch" }
+				`),
+				ruleFromTextpb(`
+spam { index: 3 offset: 3 comparison: GT operand: "\x03" }
+				`),
+				ruleFromTextpb(`
+spam { index: 4 offset: 4 comparison: GTE operand: "\x03\x00" }
+				`),
+				ruleFromTextpb(`
+spam { index: 5 offset: 5 comparison: LT operand: "\xff\xff\xff" }
+				`),
+				ruleFromTextpb(`
+spam { index: 6 offset: 6 comparison: LTE operand: "\xff\xff\xff\xee" }
+				`),
+				ruleFromTextpb(`
+spam { index: 1 offset: 1 comparison: BITSET operand: "\x01\x01" }
+				`),
+				ruleFromTextpb(`
+spam { index: 1 offset: 1 comparison: BITCLEAR operand: "\xa0\xa0" }
+				`),
+			},
+		},
+	}
+
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			sess, err := startTrialSession(tpm)
+			if err != nil {
+				t.Fatalf("could not start trial session: %v", err)
+			}
+			defer tpm2.FlushContext(tpm, *sess)
+			calcHash := make([]byte, 32)
+			for i, rule := range testCase.rules {
+				err = helpers.RunRule(tpm, *sess, rule)
+				if err != nil {
+					t.Fatalf("could not run policy command: %v", err)
+				}
+				calcHash, err = helpers.ExtendPolicy(crypto.SHA256, calcHash, rule)
+				if err != nil {
+					t.Fatalf("could not hash policy: %v", err)
+				}
+				actualHash, err := tpm2.PolicyGetDigest(tpm, *sess)
+				if err != nil {
+					t.Fatalf("could not get hash from TPM: %v", err)
+				}
+				if !bytes.Equal(calcHash, actualHash) {
+					t.Errorf("after rule %d, hash is incorrect\n"+
+						"calculated: %s\nactual: %s\n", i,
+						hex.EncodeToString(calcHash),
+						hex.EncodeToString(actualHash))
+					break
 				}
 			}
 		})

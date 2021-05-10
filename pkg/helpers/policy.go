@@ -5,11 +5,12 @@ import (
 	"crypto"
 	"encoding/binary"
 	"fmt"
-	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
-	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
+	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
+	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"io"
+	"math"
 	"math/big"
 )
 
@@ -73,11 +74,11 @@ func SpamPolicy(alg crypto.Hash) ([]byte, error) {
 }
 
 // SpamHandle returns the TPM NV index associated with the given spam handle.
-func SpamHandle(index uint32) (*tpmutil.Handle, error) {
+func SpamHandle(index uint16) (*tpmutil.Handle, error) {
 	if index > 0xffff {
 		return nil, fmt.Errorf("invalid spam index %d (must be a uint16)", index)
 	}
-	result := tpmutil.Handle(0x017F0000 + index)
+	result := tpmutil.Handle(0x017F0000 + uint32(index))
 	return &result, nil
 }
 
@@ -107,7 +108,7 @@ func SpamOperation(comp policypb.Comparison) (*tpm2.EO, error) {
 	return &result, nil
 }
 
-func SpamTemplate(index uint32) (*tpm2.NVPublic, error) {
+func SpamTemplate(index uint16) (*tpm2.NVPublic, error) {
 	handle, err := SpamHandle(index)
 	if err != nil {
 		return nil, err
@@ -154,13 +155,14 @@ func SpamTemplate(index uint32) (*tpm2.NVPublic, error) {
 	}, nil
 }
 
-// SpamName returns the TPM2B_NAME for a spam NV index.
-func SpamName(index uint32) ([]byte, error) {
+// SpamName returns the name for a spam NV index.
+func SpamName(index uint16) ([]byte, error) {
 	alg := crypto.SHA256
 	template, err := SpamTemplate(index)
 	if err != nil {
 		return nil, err
 	}
+	template.Attributes |= tpm2.AttrWritten
 	packed, err := tpmutil.Pack(template)
 	if err != nil {
 		return nil, err
@@ -174,15 +176,7 @@ func SpamName(index uint32) ([]byte, error) {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	// A TPM2B_NAME is a sized buffer containing (alg ID || digest)
-	hdr := struct {
-		length uint16
-		alg    tpm2.Algorithm
-	}{
-		length: uint16(alg.Size() + 2),
-		alg:    tpmAlg,
-	}
-	if err = binary.Write(&buf, binary.BigEndian, hdr); err != nil {
+	if err = binary.Write(&buf, binary.BigEndian, tpmAlg); err != nil {
 		return nil, err
 	}
 	if _, err = buf.Write(hash); err != nil {
@@ -193,18 +187,23 @@ func SpamName(index uint32) ([]byte, error) {
 
 // extendSpamPolicy calculates the policy hash for a SpamRule (which is a type of TPM2_PolicyNV)
 func extendSpamPolicy(currentPolicy []byte, rule *policypb.SpamRule, alg crypto.Hash) ([]byte, error) {
+	if rule.Index > math.MaxUint16 {
+		return nil, fmt.Errorf("invalid spam index %d", rule.Index)
+	}
 	operation, err := SpamOperation(rule.Comparison)
 	if err != nil {
 		return nil, err
 	}
+
 	args, err := HashItems(alg, rule.Operand, uint16(rule.Offset), *operation)
 	if err != nil {
 		return nil, fmt.Errorf("could not calculate args hash: %w", err)
 	}
-	name, err := SpamName(rule.Index)
+	name, err := SpamName(uint16(rule.Index))
 	if err != nil {
 		return nil, fmt.Errorf("could not calculate NV index name: %w", err)
 	}
+
 	return HashItems(alg, currentPolicy, uint32(0x149), args, name)
 }
 
@@ -420,7 +419,7 @@ func FirstSatisfiable(policies NormalizedPolicy, currentState *TpmState) (*int, 
 }
 
 func spamPolicyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.SpamRule) error {
-	handle, err := SpamHandle(r.Index)
+	handle, err := SpamHandle(uint16(r.Index))
 	if err != nil {
 		return err
 	}
@@ -429,7 +428,7 @@ func spamPolicyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.SpamRule) e
 	if uint32(offset) != r.Offset {
 		return fmt.Errorf("invalid offset: %v", r.Offset)
 	}
-	if int(offset) + len(operand) > 64 {
+	if int(offset)+len(operand) > 64 {
 		return fmt.Errorf("invalid offset and operand length: %v bytes starting at %v", len(operand), r.Offset)
 	}
 	operation, err := SpamOperation(r.Comparison)
@@ -439,13 +438,32 @@ func spamPolicyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.SpamRule) e
 	return tpm2.PolicyNV(tpm, *handle, *handle, s, "", operand, offset, *operation)
 }
 
-func policyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.Rule) error {
+// RunRule runs the rule in the given session handle.
+func RunRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.Rule) error {
 	switch x := r.Assertion.(type) {
 	case *policypb.Rule_Spam:
 		return spamPolicyRule(tpm, s, x.Spam)
 	default:
 		return fmt.Errorf("unrecognized rule type: %v", x)
 	}
+}
+
+// RunOr runs the PolicyOr command to go from the given node to its parent, in
+// the given session handle.
+func RunOr(tpm io.ReadWriter, s tpmutil.Handle, tree PolicyHashTree, index int) error {
+	if index <= 0 {
+		return fmt.Errorf("specified node %d has no parent", index)
+	}
+	if index >= len(tree) {
+		return fmt.Errorf("specified node %d does not exist", index)
+	}
+	parent := eighttree.ParentIndex(index)
+	ors := policyChildren(tree, parent)
+	digests := tpm2.TPMLDigest{}
+	for _, or := range ors {
+		digests.Digests = append(digests.Digests, tpmutil.U16Bytes(or))
+	}
+	return tpm2.PolicyOr(tpm, s, digests)
 }
 
 // RunPolicy runs the satisfied TPM policy in the given session handle.
@@ -471,20 +489,16 @@ func RunPolicy(tpm io.ReadWriter, s tpmutil.Handle, p *policypb.Policy) error {
 		return err
 	}
 	for i, rule := range norm[*idx] {
-		if err = policyRule(tpm, s, rule); err != nil {
+		if err = RunRule(tpm, s, rule); err != nil {
 			return fmt.Errorf("on normalized branch %d, rule %d: %w", *idx, i, err)
 		}
 	}
 	for *currentIndex != 0 {
-		*currentIndex = eighttree.ParentIndex(*currentIndex)
-		ors := policyChildren(tree, *currentIndex)
-		digests := tpm2.TPMLDigest{}
-		for _, or := range ors {
-			digests.Digests = append(digests.Digests, tpmutil.U16Bytes(or))
+		parent := eighttree.ParentIndex(*currentIndex)
+		if err = RunOr(tpm, s, tree, *currentIndex); err != nil {
+			return fmt.Errorf("or-ing up from node %d to node %d: %w", *currentIndex, parent, err)
 		}
-		if err = tpm2.PolicyOr(tpm, s, digests); err != nil {
-			return err
-		}
+		*currentIndex = parent
 	}
 	return nil
 }
