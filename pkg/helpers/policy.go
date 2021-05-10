@@ -405,12 +405,16 @@ func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 // returns an error if no policy was satisfiable.
 func FirstSatisfiable(policies NormalizedPolicy, currentState *TpmState) (*int, error) {
 	for i, policy := range policies {
+		satisfiable := true
 		for _, rule := range policy {
 			if !isSatisfiable(rule, currentState) {
-				continue
+				satisfiable = false
+				break
 			}
 		}
-		return &i, nil
+		if satisfiable {
+			return &i, nil
+		}
 	}
 	return nil, fmt.Errorf("unsatisfiable spam policy")
 }
