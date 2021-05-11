@@ -48,8 +48,8 @@ func (norm NormalizedPolicy) CalculateTree(alg crypto.Hash) (PolicyHashTree, err
 	return result, nil
 }
 
-// leaf returns a pointer to the given leaf in the tree.
-func (t PolicyHashTree) leafIndex(i int) (*int, error) {
+// LeafIndex returns a pointer to the given leaf in the tree.
+func (t PolicyHashTree) LeafIndex(i int) (*int, error) {
 	internal, err := eighttree.InternalCountFromTotal(len(t))
 	if err != nil {
 		return nil, fmt.Errorf("invalid tree: %w", err)
@@ -61,7 +61,7 @@ func (t PolicyHashTree) leafIndex(i int) (*int, error) {
 	return &result, nil
 }
 func (t PolicyHashTree) leaf(i int) (*[]byte, error) {
-	idx, err := t.leafIndex(i)
+	idx, err := t.LeafIndex(i)
 	if err != nil {
 		return nil, err
 	}
@@ -484,7 +484,7 @@ func RunPolicy(tpm io.ReadWriter, s tpmutil.Handle, p *policypb.Policy) error {
 	if err != nil {
 		return err
 	}
-	currentIndex, err := tree.leafIndex(*idx)
+	currentIndex, err := tree.LeafIndex(*idx)
 	if err != nil {
 		return err
 	}
