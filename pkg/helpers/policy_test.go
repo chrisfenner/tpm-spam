@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 	"io"
 	"math/rand"
+	"strings"
 	"testing"
 	"time"
 )
@@ -441,7 +442,7 @@ or { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } 
 // Test a bunch of policies that should all be satisfied with the same simple state.
 func TestSatisfiablePolicies(t *testing.T) {
 	tpmState := helpers.TpmState{
-		Spams: map[uint32]helpers.SpamContents{
+		Spams: map[uint16]helpers.SpamContents{
 			1: [64]byte{
 				0, 1, 2, 3, 4, 5, 6, 7,
 				8, 9, 10, 11, 12, 13, 14, 15,
@@ -1030,6 +1031,40 @@ spam { index: 3 offset: 3 comparison: LTE operand: "\xff" }
 					}
 				}
 			})
+		}
+	}
+}
+
+func TestCurrentTpmState(t *testing.T) {
+	tpm, err := simulator.Get()
+	if err != nil {
+		t.Fatalf("could not connect to TPM simulator")
+	}
+	defer tpm.Close()
+
+	for i := uint16(1); i <= 6; i++ {
+		if err := spam.Define(tpm, i, ""); err != nil {
+			t.Fatalf("could not define test spams: %v", err)
+		}
+		defer spam.Undefine(tpm, i, "")
+		data := [64]byte{}
+		copy(data[:], fmt.Sprintf("%d cans of spam on the wall", i))
+		if err := spam.Write(tpm, i, data); err != nil {
+			t.Fatalf("could not write test spam: %v", err)
+		}
+	}
+
+	state, err := helpers.CurrentTpmState(tpm)
+	if err != nil {
+		t.Fatalf("from CurrentTpmState: %v", err)
+	}
+
+	for i := uint16(1); i <= 6; i++ {
+		got, ok := state.Spams[i]
+		if !ok {
+			t.Errorf("wanted to find spam %d", i)
+		} else if want := fmt.Sprintf("%d cans of spam on the wall", i); !strings.HasPrefix(string(got[:]), want) {
+			t.Errorf("want '%s' got '%s'", want, string(got[:]))
 		}
 	}
 }
