@@ -361,13 +361,13 @@ type SpamContents [64]byte
 
 // TpmState represents the spam policy-relevant current state in the TPM.
 type TpmState struct {
-	Spams map[uint32]SpamContents
+	Spams map[uint16]SpamContents
 }
 
 // CurrentTpmState queries the TPM for its current spam-relevant state.
 // TODO: Clean up this function, it has a lot of magic numbers and casts.
 func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
-	spams := make(map[uint32]SpamContents)
+	spams := make(map[uint16]SpamContents)
 	for handle := uint32(0x017F0000); handle < uint32(0x01800000); handle++ {
 		handles, _, err := tpm2.GetCapability(tpm, tpm2.CapabilityHandles, 8, handle)
 		if err != nil {
@@ -389,7 +389,7 @@ func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 				// Don't worry about this one
 				continue
 			}
-			spamIndex := uint32(hdl) - uint32(0x017F0000)
+			spamIndex := uint16(uint32(hdl) - 0x017F0000)
 			var spam SpamContents
 			copy(spam[:], data)
 			spams[spamIndex] = spam
@@ -466,43 +466,6 @@ func RunOr(tpm io.ReadWriter, s tpmutil.Handle, tree PolicyHashTree, index int) 
 	return tpm2.PolicyOr(tpm, s, digests)
 }
 
-// RunPolicy runs the satisfied TPM policy in the given session handle.
-func RunPolicy(tpm io.ReadWriter, s tpmutil.Handle, p *policypb.Policy) error {
-	norm, err := Normalize(p)
-	if err != nil {
-		return err
-	}
-	state, err := CurrentTpmState(tpm)
-	if err != nil {
-		return err
-	}
-	idx, err := FirstSatisfiable(norm, state)
-	if err != nil {
-		return err
-	}
-	tree, err := norm.CalculateTree(crypto.SHA256)
-	if err != nil {
-		return err
-	}
-	currentIndex, err := tree.LeafIndex(*idx)
-	if err != nil {
-		return err
-	}
-	for i, rule := range norm[*idx] {
-		if err = RunRule(tpm, s, rule); err != nil {
-			return fmt.Errorf("on normalized branch %d, rule %d: %w", *idx, i, err)
-		}
-	}
-	for *currentIndex != 0 {
-		parent := eighttree.ParentIndex(*currentIndex)
-		if err = RunOr(tpm, s, tree, *currentIndex); err != nil {
-			return fmt.Errorf("or-ing up from node %d to node %d: %w", *currentIndex, parent, err)
-		}
-		*currentIndex = parent
-	}
-	return nil
-}
-
 // isSatisfiable returns whether a rule would pass if enforced by the TPM whose
 // current state is described by currentState.
 func isSatisfiable(rule *policypb.Rule, currentState *TpmState) bool {
@@ -521,14 +484,14 @@ func isSpamSatisfiable(rule *policypb.SpamRule, currentState *TpmState) bool {
 		// not a valid policy
 		return false
 	}
-	contents, ok := currentState.Spams[rule.Index]
+	contents, ok := currentState.Spams[uint16(rule.Index)]
 	if !ok {
 		// The indicated spam is not written so it cannot be compared.
 		// N.B.: If the indicated spam is defined but not written,
 		// anybody could write anything to it and satisfy the policy.
 		return false
 	}
-	spamOperand := contents[rule.Offset:len(rule.Operand)]
+	spamOperand := contents[rule.Offset:rule.Offset+uint32(len(rule.Operand))]
 	switch rule.Comparison {
 	case policypb.Comparison_EQ:
 		return isSpamEq(spamOperand, rule.Operand)
