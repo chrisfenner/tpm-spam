@@ -1,12 +1,16 @@
-package helpers_test
+package behash_test
 
 import (
 	"bytes"
 	"crypto"
+	_ "crypto/sha1"
+	_ "crypto/sha256"
+	_ "crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"github.com/chrisfenner/tpm-spam/pkg/helpers"
 	"testing"
+
+	"github.com/chrisfenner/tpm-spam/pkg/behash"
 )
 
 func TestHashItems(t *testing.T) {
@@ -53,7 +57,7 @@ func TestHashItems(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error decoding hashHex: %v", err)
 			}
-			hash, err := helpers.HashItems(testCase.alg, testCase.items...)
+			hash, err := behash.HashItems(testCase.alg, testCase.items...)
 			if err != nil {
 				t.Fatalf("error hashing items: %v", err)
 			}

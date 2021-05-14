@@ -4,16 +4,19 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"io"
+	"strings"
+	"testing"
+
 	"github.com/chrisfenner/go-tpm/tpm2"
-	"github.com/chrisfenner/tpm-spam/pkg/spam"
+	"github.com/chrisfenner/tpm-spam/pkg/policy"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
+	"github.com/chrisfenner/tpm-spam/pkg/spam"
 	_ "github.com/golang/protobuf/proto"
 	"github.com/google/go-tpm-tools/simulator"
 	"google.golang.org/protobuf/encoding/prototext"
-	"testing"
-	"io"
-	"strings"
-	"fmt"
 )
 
 const (
@@ -25,10 +28,10 @@ const (
 )
 
 type fakeSpamInfo struct {
-	hash [32]byte
-	purpose [8]byte
-	major uint64
-	minor uint64
+	hash      [32]byte
+	purpose   [8]byte
+	major     uint64
+	minor     uint64
 	buildTime uint64
 }
 
@@ -39,10 +42,10 @@ func purposeFromString(str string) [8]byte {
 }
 
 var (
-	biosHash = sha256.Sum256([]byte("bios verification key"))
-	bootloaderHash = sha256.Sum256([]byte("bootloader verification key"))
-	kernelHash = sha256.Sum256([]byte("kernel verification key"))
-	initramfsHash = sha256.Sum256([]byte("initramfs verification key"))
+	biosHash        = sha256.Sum256([]byte("bios verification key"))
+	bootloaderHash  = sha256.Sum256([]byte("bootloader verification key"))
+	kernelHash      = sha256.Sum256([]byte("kernel verification key"))
+	initramfsHash   = sha256.Sum256([]byte("initramfs verification key"))
 	applicationHash = sha256.Sum256([]byte("application verification key"))
 )
 
@@ -52,57 +55,57 @@ func setupFakeSpams(t *testing.T, tpm io.ReadWriter) {
 	// For compactness, all the test spams will follow the same schema.
 	// Spam schema can differ from index to index - the important thing is
 	// that measurer and verifier agree on the schema.
-	spams := []struct{
+	spams := []struct {
 		index uint16
-		info fakeSpamInfo
+		info  fakeSpamInfo
 	}{
 		{
 			index: biosSpamIndex,
 			info: fakeSpamInfo{
-				hash: biosHash,
-				purpose: purposeFromString("DEBUG"),
-				major: 10,
-				minor: 3,
+				hash:      biosHash,
+				purpose:   purposeFromString("DEBUG"),
+				major:     10,
+				minor:     3,
 				buildTime: 1620708579,
 			},
 		},
 		{
 			index: bootloaderSpamIndex,
 			info: fakeSpamInfo{
-				hash: bootloaderHash,
-				purpose: purposeFromString("PROD"),
-				major: 2,
-				minor: 77,
+				hash:      bootloaderHash,
+				purpose:   purposeFromString("PROD"),
+				major:     2,
+				minor:     77,
 				buildTime: 1491230079,
 			},
 		},
 		{
 			index: kernelSpamIndex,
 			info: fakeSpamInfo{
-				hash: kernelHash,
-				purpose: purposeFromString("DEV"),
-				major: 999,
-				minor: 123,
+				hash:      kernelHash,
+				purpose:   purposeFromString("DEV"),
+				major:     999,
+				minor:     123,
 				buildTime: 159770000,
 			},
 		},
 		{
 			index: initramfsSpamIndex,
 			info: fakeSpamInfo{
-				hash: initramfsHash,
-				purpose: purposeFromString("PROD"),
-				major: 0,
-				minor: 2,
+				hash:      initramfsHash,
+				purpose:   purposeFromString("PROD"),
+				major:     0,
+				minor:     2,
 				buildTime: 1600000000,
 			},
 		},
 		{
 			index: applicationSpamIndex,
 			info: fakeSpamInfo{
-				hash: applicationHash,
-				purpose: purposeFromString("FIZZBUZZ"),
-				major: 9,
-				minor: 18,
+				hash:      applicationHash,
+				purpose:   purposeFromString("FIZZBUZZ"),
+				major:     9,
+				minor:     18,
 				buildTime: 161091278,
 			},
 		},
@@ -196,5 +199,70 @@ func TestSpamSatisfyPolicy(t *testing.T) {
 	err = spam.SatisfyPolicy(tpm, handle, policy)
 	if err != nil {
 		t.Errorf("error from SatisfyPolicy: %v", err)
+	}
+}
+
+func TestCalculatePolicy(t *testing.T) {
+	cases := []struct {
+		name    string
+		hashHex string
+		policy  *policypb.Policy
+	}{
+		{
+			"single spam",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			policy.FromTextpbOrPanic(`
+rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } }
+			`),
+		},
+		{
+			"OR of 2 spams",
+			"82f97b5a589664eef101b9e6fcb69bca388bb71299494202154d0eb206f190ed",
+			policy.FromTextpbOrPanic(`
+or {
+	policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } }
+	policy { rule { spam { index: 2 offset: 4 comparison: NEQ operand: "bar" } } }
+}
+			`),
+		},
+		{
+			"unnecessary AND",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			policy.FromTextpbOrPanic(`
+and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
+			`),
+		},
+		{
+			"two unnecessary ANDs",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			policy.FromTextpbOrPanic(`
+and { policy { and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } } } }
+			`),
+		},
+		{
+			"unnecessary OR",
+			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			policy.FromTextpbOrPanic(`
+or { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
+			`),
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			expectedPolicy, err := hex.DecodeString(testCase.hashHex)
+			if err != nil {
+				t.Fatalf("error decoding expected hex string: %v", err)
+			}
+			policy, err := spam.GetPolicy(testCase.policy)
+			if err != nil {
+				t.Errorf("error from CalculatePolicy: %v", err)
+			} else {
+				if !bytes.Equal(policy, expectedPolicy) {
+					t.Errorf("want\n%v\ngot\n%v\n",
+						hex.EncodeToString(expectedPolicy),
+						hex.EncodeToString(policy))
+				}
+			}
+		})
 	}
 }
