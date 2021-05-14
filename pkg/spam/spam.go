@@ -4,17 +4,22 @@ package spam
 import (
 	"crypto"
 	"fmt"
+	"io"
+
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
 	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
-	"github.com/chrisfenner/tpm-spam/pkg/helpers"
+	"github.com/chrisfenner/tpm-spam/pkg/normpolicy"
+	"github.com/chrisfenner/tpm-spam/pkg/policy"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
-	"io"
+	"github.com/chrisfenner/tpm-spam/pkg/satisfaction"
+	"github.com/chrisfenner/tpm-spam/pkg/spamdef"
+	"github.com/chrisfenner/tpm-spam/pkg/tpmstate"
 )
 
 // Define sets up a spam at the specified slot.
 func Define(tpm io.ReadWriter, slot uint16, platformAuth string) error {
-	template, err := helpers.SpamTemplate(slot)
+	template, err := spamdef.Template(slot)
 	if err != nil {
 		return err
 	}
@@ -27,7 +32,7 @@ func Define(tpm io.ReadWriter, slot uint16, platformAuth string) error {
 
 // Write writes the spam at the specified slot.
 func Write(tpm io.ReadWriter, slot uint16, data [64]byte) error {
-	handle, err := helpers.SpamHandle(slot)
+	handle, err := spamdef.Handle(slot)
 	if err != nil {
 		return err
 	}
@@ -69,16 +74,16 @@ func Read(tpm io.ReadWriter, slot uint16) (*[64]byte, error) {
 
 // SatisfyPolicy runs a spam policy in the given policy session.
 // Fails if the policy is not satisfiable.
-func SatisfyPolicy(tpm io.ReadWriter, session tpmutil.Handle, policy *policypb.Policy) error {
-	norm, err := helpers.Normalize(policy)
+func SatisfyPolicy(tpm io.ReadWriter, session tpmutil.Handle, pol *policypb.Policy) error {
+	norm, err := normpolicy.Normalize(pol)
 	if err != nil {
 		return err
 	}
-	state, err := helpers.CurrentTpmState(tpm)
+	state, err := tpmstate.CurrentTpmState(tpm)
 	if err != nil {
 		return err
 	}
-	idx, err := helpers.FirstSatisfiable(norm, state)
+	idx, err := satisfaction.FirstSatisfiable(norm, state)
 	if err != nil {
 		return err
 	}
@@ -91,13 +96,13 @@ func SatisfyPolicy(tpm io.ReadWriter, session tpmutil.Handle, policy *policypb.P
 		return err
 	}
 	for i, rule := range norm[*idx] {
-		if err = helpers.RunRule(tpm, session, rule); err != nil {
+		if err = policy.RunRule(tpm, session, rule); err != nil {
 			return fmt.Errorf("on normalized branch %d, rule %d: %w", *idx, i, err)
 		}
 	}
 	for *currentIndex != 0 {
 		parent := eighttree.ParentIndex(*currentIndex)
-		if err = helpers.RunOr(tpm, session, tree, *currentIndex); err != nil {
+		if err = tree.RunOr(tpm, session, *currentIndex); err != nil {
 			return fmt.Errorf("or-ing up from node %d to node %d: %w", *currentIndex, parent, err)
 		}
 		*currentIndex = parent
@@ -107,7 +112,7 @@ func SatisfyPolicy(tpm io.ReadWriter, session tpmutil.Handle, policy *policypb.P
 
 // GetPolicy gets the TPM policy hash for a given spam policy.
 func GetPolicy(policy *policypb.Policy) ([]byte, error) {
-	norm, err := helpers.Normalize(policy)
+	norm, err := normpolicy.Normalize(policy)
 	if err != nil {
 		return nil, err
 	}
@@ -115,12 +120,12 @@ func GetPolicy(policy *policypb.Policy) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return tree[0], nil
+	return tree.Root(), nil
 }
 
 // Undefine undefines the spam at the specified slot.
 func Undefine(tpm io.ReadWriter, slot uint16, platformAuth string) error {
-	handle, err := helpers.SpamHandle(slot)
+	handle, err := spamdef.Handle(slot)
 	if err != nil {
 		return err
 	}

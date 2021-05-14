@@ -2,8 +2,9 @@ package eighttree_test
 
 import (
 	"fmt"
-	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
 	"testing"
+
+	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
 )
 
 func TestInternalCounts(t *testing.T) {
