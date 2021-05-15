@@ -1,3 +1,5 @@
+// package spamdef provides some common definitions for TPM spams that don't
+// need to be exposed in the main spam API, but should be unit testable.
 package spamdef
 
 import (

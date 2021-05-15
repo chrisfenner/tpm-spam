@@ -1,3 +1,4 @@
+// package normpolicy provides normalization functions for spam policy proto trees.
 package normpolicy
 
 import (

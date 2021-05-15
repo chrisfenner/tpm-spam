@@ -1,4 +1,4 @@
-// package spam defines some library functions for dealing with spams
+// package spam defines some library functions for dealing with spams.
 package spam
 
 import (
