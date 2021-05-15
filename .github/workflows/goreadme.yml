@@ -1,0 +1,22 @@
+on:
+  push:
+    branches: [actions-branch]
+jobs:
+    # Generate a markdown file from godoc.
+    goreadme:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Check out repository
+          uses: actions/checkout@v2
+        - name: Setup Go
+          uses: actions/setup-go@v2
+          with:
+            go-version: '1.16.4'
+        - name: Setup goreadme
+          run: go get github.com/posener/goreadme/cmd/goreadme@v1.4.0
+        - name: Run goreadme
+          run: |
+            for PKG in behash eighttree hashtree normpolicy policy policypb satisfaction spam spamdef tpmstate
+            do
+              (cd pkg/$PKG && goreadme -functions -types -recursive > ./README.md)
+            done
