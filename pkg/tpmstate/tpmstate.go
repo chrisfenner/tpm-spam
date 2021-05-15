@@ -1,3 +1,4 @@
+// package tpmstate encapsulates a TPM state as relevant to spam policies.
 package tpmstate
 
 import (

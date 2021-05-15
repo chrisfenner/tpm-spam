@@ -1,3 +1,5 @@
+// package policy provides helpers for running the TPM2 policy rules
+// corresponding to spam policy checks.
 package policy
 
 import (

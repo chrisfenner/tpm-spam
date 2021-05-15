@@ -1,3 +1,5 @@
+// package satisfaction provides functionality for testing whether a spam
+// policy can be satisfied in a given state.
 package satisfaction
 
 import (

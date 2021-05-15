@@ -1,3 +1,4 @@
+// package hashtree provides helpers for building and walking TPM2 PolicyOR trees.
 package hashtree
 
 import (
