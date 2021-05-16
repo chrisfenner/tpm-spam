@@ -4,13 +4,13 @@ package tpmstate encapsulates a TPM state as relevant to spam policies.
 
 ## Types
 
-### type [SpamContents](/tpmstate.go#L13)
+### type [SpamContents](./pkg/tpmstate/tpmstate.go#L13)
 
 `type SpamContents [64]byte`
 
 SpamContents represents the contents of a spam.
 
-### type [TpmState](/tpmstate.go#L16)
+### type [TpmState](./pkg/tpmstate/tpmstate.go#L16)
 
 `type TpmState struct { ... }`
 

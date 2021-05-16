@@ -4,7 +4,7 @@ package normpolicy provides normalization functions for spam policy proto trees.
 
 ## Types
 
-### type [NormalizedPolicy](/normpolicy.go#L14)
+### type [NormalizedPolicy](./pkg/normpolicy/normpolicy.go#L14)
 
 `type NormalizedPolicy [][]*policypb.Rule`
 

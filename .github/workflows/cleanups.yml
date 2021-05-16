@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [main, tweak-goreadme-links]
+    branches: [main]
 jobs:
     Codegen-n-linting:
         runs-on: ubuntu-latest
@@ -41,6 +41,8 @@ jobs:
               pushd $PKG
               goreadme -functions -types -recursive > ./README.md
               # Since we did this dirty deed cd-ing into a subdirectory, fix up the file paths in generated links.
+              # Remove the leading . from ./pkg/blahblah
+              PKG=$(echo $PKG | cut -c 2-)
               sed -i 's,\(\[.*\]\)(\(/.*\.go\#.*\)),\1('"$PKG"'\2),g' ./README.md
               popd
             done
