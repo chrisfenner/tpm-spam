@@ -16,7 +16,17 @@ jobs:
           run: go get github.com/posener/goreadme/cmd/goreadme@v1.4.0
         - name: Run goreadme
           run: |
-            for PKG in behash eighttree hashtree normpolicy policy policypb satisfaction spam spamdef tpmstate
+            for PKG in ./pkg/*
             do
-              (cd pkg/$PKG && goreadme -functions -types -recursive > ./README.md)
+              (cd $PKG && goreadme -functions -types -recursive > ./README.md)
             done
+          env:
+            # Run the tool in non-CI mode: we will take care of git add and push ourselves.
+            CI: false
+        - name: Commit the generated README files.
+          run: |
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            git add ./pkg/**/*.md
+            git commit -m "run goreadme"
+            git push
