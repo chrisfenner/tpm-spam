@@ -25,7 +25,9 @@ type NormalizedPolicy [][]*policypb.Rule
 // This policy must be rearranged as one of the following:
 // 1. (PolicyFoo AND PolicyBar) OR (PolicyFoo AND PolicyBaz)
 // 2. (PolicyBar OR PolicyBaz) AND PolicyFoo.
+//
 // This function rearranges to (1).
+//
 // (2) requires an even more complex "normal form" of "OR/AND list-of-lists followed by extra
 // sequence of shared AND-rules" and does not reduce the number of ORed-together branches or the
 // length of the executed policy.

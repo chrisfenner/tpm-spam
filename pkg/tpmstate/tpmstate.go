@@ -18,6 +18,7 @@ type TpmState struct {
 }
 
 // CurrentTpmState queries the TPM for its current spam-relevant state.
+//
 // TODO: Clean up this function, it has a lot of magic numbers and casts.
 func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 	spams := make(map[uint16]SpamContents)
