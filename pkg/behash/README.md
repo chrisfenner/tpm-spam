@@ -1,6 +1,6 @@
 # behash
 
-package behash provides convenience functions for hashing big-endian stuff.
+package behash provides convenience functions for hashing big-endian things.
 
 ## Functions
 
