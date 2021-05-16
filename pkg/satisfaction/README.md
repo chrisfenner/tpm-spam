@@ -5,7 +5,7 @@ policy can be satisfied in a given state.
 
 ## Functions
 
-### func [FirstSatisfiable](./pkg/satisfaction/satisfaction.go#L16)
+### func [FirstSatisfiable](/pkg/satisfaction/satisfaction.go#L16)
 
 `func FirstSatisfiable(policies normpolicy.NormalizedPolicy, currentState *tpmstate.TpmState) (*int, error)`
 

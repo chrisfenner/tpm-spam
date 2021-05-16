@@ -4,7 +4,7 @@ package behash provides convenience functions for hashing big-endian things.
 
 ## Functions
 
-### func [HashItems](./pkg/behash/behash.go#L11)
+### func [HashItems](/pkg/behash/behash.go#L11)
 
 `func HashItems(alg crypto.Hash, items ...interface{}) ([]byte, error)`
 
