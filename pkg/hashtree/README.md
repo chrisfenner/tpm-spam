@@ -4,7 +4,7 @@ package hashtree provides helpers for building and walking TPM2 PolicyOR trees.
 
 ## Types
 
-### type [PolicyHashTree](/hashtree.go#L18)
+### type [PolicyHashTree](/hashtree.go#L19)
 
 `type PolicyHashTree [][]byte`
 

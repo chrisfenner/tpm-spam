@@ -5,25 +5,25 @@ need to be exposed in the main spam API, but should be unit testable.
 
 ## Functions
 
-### func [Handle](/spamdef.go#L17)
+### func [Handle](/spamdef.go#L18)
 
 `func Handle(index uint16) (*tpmutil.Handle, error)`
 
 Handle returns the TPM NV index associated with the given spam handle.
 
-### func [Name](/spamdef.go#L81)
+### func [Name](/spamdef.go#L82)
 
 `func Name(index uint16) ([]byte, error)`
 
 Name returns the TPM name for a spam index.
 
-### func [Policy](/spamdef.go#L74)
+### func [Policy](/spamdef.go#L75)
 
 `func Policy(alg crypto.Hash) ([]byte, error)`
 
 Policy returns the Policy hash for defining a TPM NV index as spam.
 
-### func [Template](/spamdef.go#L26)
+### func [Template](/spamdef.go#L27)
 
 `func Template(index uint16) (*tpm2.NVPublic, error)`
 
