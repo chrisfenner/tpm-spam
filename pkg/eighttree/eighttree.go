@@ -1,4 +1,4 @@
-// package eighttree provides helpers for manipulating complete 8-trees.
+// package eighttree provides helpers for manipulating complete 8-trees for PolicyOR.
 package eighttree
 
 import (
