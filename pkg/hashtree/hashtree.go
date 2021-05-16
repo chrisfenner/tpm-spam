@@ -14,7 +14,7 @@ import (
 )
 
 // PolicyHashTree represents a TPM2_PolicyOR tree as a complete 8-tree, where all internal nodes are hashes of PolicyOR
-// commands, and and all leaf nodes represent concrete policies used to create the tree.
+// commands, and all leaf nodes represent concrete policies used to create the tree.
 // normalized sublist's policy.
 type PolicyHashTree [][]byte
 
