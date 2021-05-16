@@ -35,6 +35,8 @@ jobs:
             fi
         - name: Install Protoc
           uses: arduino/setup-protoc@v1
+        - name: Install protoc-gen-go
+          run: go install google.golang.org/protobuf/cmd/protoc-gen-go
         - name: Run protoc to update any generated code that got missed, to avoid having to JIT protoc for builds.
           run: ./proto/regenerate_source.sh
         - name: Setup goimports
