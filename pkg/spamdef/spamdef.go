@@ -46,12 +46,12 @@ const (
 // * `TPMA_NV_PLATFORMCREATE` = 1: Undefined with Platform, not Owner Auth
 // * `TPMA_NV_READ_STCLEAR` = 0: May not be read-locked
 const TPMSpamAttributes tpm2.NVAttr = tpm2.AttrPolicyWrite |
-		tpm2.AttrWriteAll |
-		tpm2.AttrAuthRead |
-		tpm2.AttrNoDA |
-		tpm2.AttrOrderly |
-		tpm2.AttrClearSTClear |
-		tpm2.AttrPlatformCreate
+	tpm2.AttrWriteAll |
+	tpm2.AttrAuthRead |
+	tpm2.AttrNoDA |
+	tpm2.AttrOrderly |
+	tpm2.AttrClearSTClear |
+	tpm2.AttrPlatformCreate
 
 // Handle returns the TPM NV index associated with the given spam handle.
 func Handle(index uint16) (*tpmutil.Handle, error) {
