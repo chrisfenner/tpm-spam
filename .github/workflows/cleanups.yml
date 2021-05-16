@@ -34,7 +34,7 @@ jobs:
             fi
         - name: Setup goreadme
           # Use forked goreadme for features being upstreamed.
-          run: go get github.com/chrisfenner/goreadme/cmd/goreadme
+          run: go get github.com/chrisfenner/goreadme/cmd/goreadme@master
         - name: Run goreadme
           run: |
             for PKG in ./pkg/*
