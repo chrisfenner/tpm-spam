@@ -40,36 +40,35 @@ const TPMSpamAttributes tpm2.NVAttr = tpm2.AttrPolicyWrite |
     tpm2.AttrPlatformCreate
 ```
 
+TPMSpamOffset is the offset of the first spam in TPM NV memory.
+This is in "reserved Platform Handles" space per
+[TCG]([https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf](https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf)).
+
 ```golang
-const (
-    // TPMSpamOffset is the offset of the first spam in TPM NV memory.
-    // This is in "reserved Platform Handles" space per
-    // [TCG](https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf).
-    TPMSpamOffset = 0x017F0000
-)
+const TPMSpamOffset = 0x017F0000
 ```
 
 ## Functions
 
-### func [Handle](/pkg/spamdef/spamdef.go#L57)
+### func [Handle](/pkg/spamdef/spamdef.go#L55)
 
 `func Handle(index uint16) (*tpmutil.Handle, error)`
 
 Handle returns the TPM NV index associated with the given spam handle.
 
-### func [Name](/pkg/spamdef/spamdef.go#L92)
+### func [Name](/pkg/spamdef/spamdef.go#L90)
 
 `func Name(index uint16) ([]byte, error)`
 
 Name returns the TPM name for a spam index.
 
-### func [Policy](/pkg/spamdef/spamdef.go#L85)
+### func [Policy](/pkg/spamdef/spamdef.go#L83)
 
 `func Policy(alg crypto.Hash) ([]byte, error)`
 
 Policy returns the Policy hash for defining a TPM NV index as spam.
 
-### func [Template](/pkg/spamdef/spamdef.go#L66)
+### func [Template](/pkg/spamdef/spamdef.go#L64)
 
 `func Template(index uint16) (*tpm2.NVPublic, error)`
 
