@@ -14,12 +14,10 @@ import (
 	"github.com/chrisfenner/tpm-spam/pkg/behash"
 )
 
-const (
-	// TPMSpamOffset is the offset of the first spam in TPM NV memory.
-	// This is in "reserved Platform Handles" space per
-	// [TCG](https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf).
-	TPMSpamOffset = 0x017F0000
-)
+// TPMSpamOffset is the offset of the first spam in TPM NV memory.
+// This is in "reserved Platform Handles" space per
+// [TCG](https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf).
+const TPMSpamOffset = 0x017F0000
 
 // TPMSpamAttributes is the set of TPM NV attributes for spam. As these are essential
 // to the security properties of the library, they are discussed here.
