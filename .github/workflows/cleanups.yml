@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [actions-branch]
+    branches: [main]
 jobs:
     Codegen-n-linting:
         runs-on: ubuntu-latest
