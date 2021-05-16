@@ -1,0 +1,56 @@
+on:
+  push:
+    branches: [main]
+jobs:
+    Codegen-n-linting:
+        runs-on: ubuntu-latest
+        steps:
+        - name: Check out repository
+          uses: actions/checkout@v2
+        - name: Setup Go
+          uses: actions/setup-go@v2
+          with:
+            go-version: '1.16.4'
+        - name: Install Protoc
+          uses: arduino/setup-protoc@v1
+        - name: Install protoc-gen-go
+          run: go install google.golang.org/protobuf/cmd/protoc-gen-go
+        - name: Run protoc to update any generated code that got missed, to avoid having to JIT protoc for builds.
+          run: ./proto/regenerate_source.sh
+        - name: Setup goimports
+          run: go get golang.org/x/tools/cmd/goimports
+        - name: Run goimports
+          run: goimports -w -local github.com/chrisfenner/tpm-spam .
+        - name: Commit the generated go files.
+          run: |
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            if [[ $(git diff --staged --stat) != '' ]]; then
+              git add ./pkg/**/*.go
+              git commit -m "run protoc and goimports"
+              git push
+            else
+              echo "Nice job, no code formatting needed."
+            fi
+        - name: Setup goreadme
+          run: go get github.com/posener/goreadme/cmd/goreadme@v1.4.0
+        - name: Run goreadme
+          run: |
+            for PKG in ./pkg/*
+            do
+              (cd $PKG && goreadme -functions -types -recursive > ./README.md)
+            done
+          env:
+            # Run the tool in non-CI mode: we will take care of git add and push ourselves.
+            CI: false
+        - name: Commit the generated README files.
+          run: |
+            git config user.name github-actions
+            git config user.email github-actions@github.com
+            if [[ $(git diff --staged --stat) != '' ]]; then
+              git add ./pkg/**/*.md
+              git commit -m "run goreadme"
+              git push
+            else
+              echo "No readme updates needed."
+            fi

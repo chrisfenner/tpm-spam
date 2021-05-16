@@ -11,12 +11,13 @@ import (
 	"testing"
 
 	"github.com/chrisfenner/go-tpm/tpm2"
-	"github.com/chrisfenner/tpm-spam/pkg/policy"
-	"github.com/chrisfenner/tpm-spam/pkg/policypb"
-	"github.com/chrisfenner/tpm-spam/pkg/spam"
 	_ "github.com/golang/protobuf/proto"
 	"github.com/google/go-tpm-tools/simulator"
 	"google.golang.org/protobuf/encoding/prototext"
+
+	"github.com/chrisfenner/tpm-spam/pkg/policy"
+	"github.com/chrisfenner/tpm-spam/pkg/policypb"
+	"github.com/chrisfenner/tpm-spam/pkg/spam"
 )
 
 const (

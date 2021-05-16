@@ -10,10 +10,11 @@ import (
 
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
+	"google.golang.org/protobuf/encoding/prototext"
+
 	"github.com/chrisfenner/tpm-spam/pkg/behash"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/chrisfenner/tpm-spam/pkg/spamdef"
-	"google.golang.org/protobuf/encoding/prototext"
 )
 
 // For calculates the TPM policy hash for the given sequence of rules, with the specified algorithm.
