@@ -33,7 +33,8 @@ jobs:
               echo "Nice job, no code formatting needed."
             fi
         - name: Setup goreadme
-          run: go get github.com/posener/goreadme/cmd/goreadme@v1.4.0
+          # Use forked goreadme for features being upstreamed.
+          run: go get github.com/chrisfenner/goreadme/cmd/goreadme
         - name: Run goreadme
           run: |
             for PKG in ./pkg/*
