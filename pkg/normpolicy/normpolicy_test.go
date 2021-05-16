@@ -3,10 +3,11 @@ package normpolicy_test
 import (
 	"testing"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/chrisfenner/tpm-spam/pkg/normpolicy"
 	"github.com/chrisfenner/tpm-spam/pkg/policy"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
-	"github.com/golang/protobuf/proto"
 )
 
 func TestNormalize(t *testing.T) {

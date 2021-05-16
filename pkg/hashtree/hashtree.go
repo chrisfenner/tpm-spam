@@ -8,6 +8,7 @@ import (
 
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
+
 	"github.com/chrisfenner/tpm-spam/pkg/behash"
 	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
 )

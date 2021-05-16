@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-tpm-tools/simulator"
+
 	"github.com/chrisfenner/tpm-spam/pkg/spam"
 	"github.com/chrisfenner/tpm-spam/pkg/tpmstate"
-	"github.com/google/go-tpm-tools/simulator"
 )
 
 func TestCurrentTpmState(t *testing.T) {
