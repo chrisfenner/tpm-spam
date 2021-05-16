@@ -4,7 +4,7 @@ Spam = "**S**emantic **P**latform **A**ttestation **M**easurements"
 Spams are strings of 64 bytes of data representing a boot stage identity measured into a TPM. Spams
 for a given boot stage follow a given schema, which is then matched against by TPM policies.
 
-For example, a spam for a signed Linux kernel might look like
+For example, a spam for a signed Linux kernel might look like:
 ```
 15a442c9a5d7213c6d40560ef508f578f412b9c929629e5f173eca958e71964a0000000a00000008000030390000000000000000000000000000000000000000
 ```
