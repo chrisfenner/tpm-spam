@@ -1,6 +1,6 @@
 on:
   push:
-    branches: [main]
+    branches: [main, tweak-goreadme-links]
 jobs:
     Codegen-n-linting:
         runs-on: ubuntu-latest
@@ -25,8 +25,8 @@ jobs:
           run: |
             git config user.name github-actions
             git config user.email github-actions@github.com
+            git add ./pkg/**/*.go
             if [[ $(git diff --staged --stat) != '' ]]; then
-              git add ./pkg/**/*.go
               git commit -m "run protoc and goimports"
               git push
             else
@@ -38,7 +38,11 @@ jobs:
           run: |
             for PKG in ./pkg/*
             do
-              (cd $PKG && goreadme -functions -types -recursive > ./README.md)
+              pushd $PKG
+              goreadme -functions -types -recursive > ./README.md
+              # Since we did this dirty deed cd-ing into a subdirectory, fix up the file paths in generated links.
+              sed -i 's,\(\[.*\]\)(\(/.*\.go\#.*\)),\1('"$PKG"'\2),g' ./README.md
+              popd
             done
           env:
             # Run the tool in non-CI mode: we will take care of git add and push ourselves.
@@ -47,8 +51,8 @@ jobs:
           run: |
             git config user.name github-actions
             git config user.email github-actions@github.com
+            git add ./pkg/**/*.md
             if [[ $(git diff --staged --stat) != '' ]]; then
-              git add ./pkg/**/*.md
               git commit -m "run goreadme"
               git push
             else
