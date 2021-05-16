@@ -17,7 +17,7 @@ import (
 const (
 	// TPMSpamOffset is the offset of the first spam in TPM NV memory.
 	// This is in "reserved Platform Handles" space per
-	// * [TCG](https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf).
+	// [TCG](https://www.trustedcomputinggroup.org/wp-content/uploads/131011-Registry-of-reserved-TPM2-handles-and-localities.pdf).
 	TPMSpamOffset = 0x017F0000
 )
 
