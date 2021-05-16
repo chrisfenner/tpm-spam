@@ -23,7 +23,7 @@ Attribute rationales:
 * [x] `TPMA_NV_AUTHREAD` = 1: Can read with Auth Value
 * [ ] `TPMA_NV_POLICYREAD` = 0: Can't read with Policy
 * [x] `TPMA_NV_NO_DA` = 1: Exempt from Dictionary Attack logic
-* [x] `TPMA_NV_ORDERLY` = 1: Only required t obe saved when shut down
+* [ ] `TPMA_NV_ORDERLY` = 0: NV writes are not deferred til clean shutdown
 * [x] `TPMA_NV_CLEAR_STCLEAR` = 1: TPMA_NV_WRITTEN is cleared by reboot
 * [ ] `TPMA_NV_READLOCKED` = 0: Not read locked (can't be set at creation)
 * [ ] `TPMA_NV_WRITTEN` = 0: Not already written (can't be set at creation)
@@ -35,7 +35,6 @@ const TPMSpamAttributes tpm2.NVAttr = tpm2.AttrPolicyWrite |
     tpm2.AttrWriteAll |
     tpm2.AttrAuthRead |
     tpm2.AttrNoDA |
-    tpm2.AttrOrderly |
     tpm2.AttrClearSTClear |
     tpm2.AttrPlatformCreate
 ```
@@ -50,25 +49,25 @@ const TPMSpamOffset = 0x017F0000
 
 ## Functions
 
-### func [Handle](/pkg/spamdef/spamdef.go#L55)
+### func [Handle](/pkg/spamdef/spamdef.go#L54)
 
 `func Handle(index uint16) (*tpmutil.Handle, error)`
 
 Handle returns the TPM NV index associated with the given spam handle.
 
-### func [Name](/pkg/spamdef/spamdef.go#L90)
+### func [Name](/pkg/spamdef/spamdef.go#L89)
 
 `func Name(index uint16) ([]byte, error)`
 
 Name returns the TPM name for a spam index.
 
-### func [Policy](/pkg/spamdef/spamdef.go#L83)
+### func [Policy](/pkg/spamdef/spamdef.go#L82)
 
 `func Policy(alg crypto.Hash) ([]byte, error)`
 
 Policy returns the Policy hash for defining a TPM NV index as spam.
 
-### func [Template](/pkg/spamdef/spamdef.go#L64)
+### func [Template](/pkg/spamdef/spamdef.go#L63)
 
 `func Template(index uint16) (*tpm2.NVPublic, error)`
 
