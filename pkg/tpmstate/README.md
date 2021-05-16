@@ -16,11 +16,12 @@ SpamContents represents the contents of a spam.
 
 TpmState represents the spam policy-relevant current state in the TPM.
 
-#### func [CurrentTpmState](/pkg/tpmstate/tpmstate.go#L22)
+#### func [CurrentTpmState](/pkg/tpmstate/tpmstate.go#L23)
 
 `func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error)`
 
 CurrentTpmState queries the TPM for its current spam-relevant state.
+
 TODO: Clean up this function, it has a lot of magic numbers and casts.
 
 ---

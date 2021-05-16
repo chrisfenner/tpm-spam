@@ -10,7 +10,7 @@ package normpolicy provides normalization functions for spam policy proto trees.
 
 NormalizedPolicy represents the normalized OR/AND list-of-lists form of a policy.
 
-#### func [Normalize](/pkg/normpolicy/normpolicy.go#L32)
+#### func [Normalize](/pkg/normpolicy/normpolicy.go#L34)
 
 `func Normalize(policy *policypb.Policy) (NormalizedPolicy, error)`
 
@@ -26,12 +26,14 @@ PolicyBar (or PolicyBaz) - it would be based on PolicyFoo being executed before 
 This policy must be rearranged as one of the following:
 1. (PolicyFoo AND PolicyBar) OR (PolicyFoo AND PolicyBaz)
 2. (PolicyBar OR PolicyBaz) AND PolicyFoo.
+
 This function rearranges to (1).
+
 (2) requires an even more complex "normal form" of "OR/AND list-of-lists followed by extra
 sequence of shared AND-rules" and does not reduce the number of ORed-together branches or the
 length of the executed policy.
 
-#### func (NormalizedPolicy) [CalculateTree](/pkg/normpolicy/normpolicy.go#L94)
+#### func (NormalizedPolicy) [CalculateTree](/pkg/normpolicy/normpolicy.go#L96)
 
 `func (norm NormalizedPolicy) CalculateTree(alg crypto.Hash) (*hashtree.PolicyHashTree, error)`
 
