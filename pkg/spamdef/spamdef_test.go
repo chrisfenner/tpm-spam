@@ -22,7 +22,7 @@ func TestSpamTemplate(t *testing.T) {
 	expected := tpm2.NVPublic{
 		NVIndex:    tpmutil.Handle(0x017F0008),
 		NameAlg:    tpm2.AlgSHA256,
-		Attributes: 0x4E041008,
+		Attributes: 0x4A041008,
 		AuthPolicy: tpmutil.U16Bytes(policy),
 		DataSize:   64,
 	}
@@ -68,11 +68,11 @@ func TestSpamName(t *testing.T) {
 	}{
 		{
 			1,
-			"000bf1f81900d5cc426fdf139d1cbf3e3c3edb67b26740e8a0313b1e4cfec503016e",
+			"000b256250663b977f359f82de770683b95e2e9323920fe69e28c95750852cf8bd74",
 		},
 		{
 			3,
-			"000b21a0b88cb141a41bf1fe66e6daf41e85e476c180dbceaeb4085b5e8e613b7db0",
+			"000b31a905aa2c259dcef4dd689fbb70dde96f90384fe3f9b7a6f6fb4f7cffc39d8e",
 		},
 	}
 	for i, testCase := range cases {
