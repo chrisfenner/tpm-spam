@@ -211,14 +211,14 @@ func TestCalculatePolicy(t *testing.T) {
 	}{
 		{
 			"single spam",
-			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			"de5cd324ea036c8cd2af6e09f520400fb94b72c765f6251f96423d13a1050016",
 			policy.FromTextpbOrPanic(`
 rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } }
 			`),
 		},
 		{
 			"OR of 2 spams",
-			"82f97b5a589664eef101b9e6fcb69bca388bb71299494202154d0eb206f190ed",
+			"ee06b23e9cc1c6e9c42e29fdd99107963129aa91efebe244c726cec658eb802b",
 			policy.FromTextpbOrPanic(`
 or {
 	policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } }
@@ -228,21 +228,21 @@ or {
 		},
 		{
 			"unnecessary AND",
-			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			"de5cd324ea036c8cd2af6e09f520400fb94b72c765f6251f96423d13a1050016",
 			policy.FromTextpbOrPanic(`
 and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
 			`),
 		},
 		{
 			"two unnecessary ANDs",
-			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			"de5cd324ea036c8cd2af6e09f520400fb94b72c765f6251f96423d13a1050016",
 			policy.FromTextpbOrPanic(`
 and { policy { and { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } } } }
 			`),
 		},
 		{
 			"unnecessary OR",
-			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			"de5cd324ea036c8cd2af6e09f520400fb94b72c765f6251f96423d13a1050016",
 			policy.FromTextpbOrPanic(`
 or { policy { rule { spam { index: 1 offset: 32 comparison: EQ operand: "foo" } } } }
 			`),

@@ -30,21 +30,21 @@ func TestExtendPolicy(t *testing.T) {
 	}{
 		{
 			"eq",
-			"e0897fdc351b072a0abefd9aff51d75634755ee6edb60807a3625667819b6d7a",
+			"de5cd324ea036c8cd2af6e09f520400fb94b72c765f6251f96423d13a1050016",
 			policy.RuleFromTextpbOrPanic(`
 spam { index: 1 offset: 32 comparison: EQ operand: "foo" }
 			`),
 		},
 		{
 			"neq",
-			"18d46f2acbf4519f6f0efb1ac6f58967a565d4c6fa53516e7597066fe2f0716a",
+			"2879777a1fe94b0f22c8c2684def181b71c1df9f50e3f9815151e69ff20da32f",
 			policy.RuleFromTextpbOrPanic(`
 spam { index: 2 offset: 4 comparison: NEQ operand: "bar" }
 			`),
 		},
 		{
 			"gt",
-			"d1c47217845f7e69fc9edf2fa3b6a91cc78c3df98b40eb9bd37f742ecea53d8d",
+			"389f0957f3cc6d1f7f7907afad720e47990bcf09f141e59cde2e22eb61ab2b18",
 			policy.RuleFromTextpbOrPanic(`
 spam { index: 3 offset: 0 comparison: GT operand: "\000\000\000\004" }
 			`),
