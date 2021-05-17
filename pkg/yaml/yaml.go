@@ -94,11 +94,11 @@
 package yaml
 
 import (
-	"fmt"
 	"encoding/hex"
+	"fmt"
 	"math"
-	"strings"
 	"reflect"
+	"strings"
 
 	"gopkg.in/yaml.v2"
 
@@ -107,8 +107,8 @@ import (
 
 // INTERNAL: Only exported for manipulation by the `yaml` package.
 type Policy struct {
-	And []*Policy `yaml:",omitempty"`
-	Or []*Policy `yaml:",omitempty"`
+	And  []*Policy   `yaml:",omitempty"`
+	Or   []*Policy   `yaml:",omitempty"`
 	Spam *SpamPolicy `yaml:",flow,omitempty"`
 	// Define is ignored when assembling policies: use it to define anchors for readability.
 	Define []interface{}
@@ -116,15 +116,15 @@ type Policy struct {
 
 // INTERNAL: Only exported for manipulation by the `yaml` package.
 type SpamPolicy struct {
-	Index uint32
-	Offset uint32
-	Eq string `yaml:",omitempty"`
-	Neq string `yaml:",omitempty"`
-	Gt string `yaml:",omitempty"`
-	Gte string `yaml:",omitempty"`
-	Lt string `yaml:",omitempty"`
-	Lte string `yaml:",omitempty"`
-	Bitset string `yaml:",omitempty"`
+	Index    uint32
+	Offset   uint32
+	Eq       string `yaml:",omitempty"`
+	Neq      string `yaml:",omitempty"`
+	Gt       string `yaml:",omitempty"`
+	Gte      string `yaml:",omitempty"`
+	Lt       string `yaml:",omitempty"`
+	Lte      string `yaml:",omitempty"`
+	Bitset   string `yaml:",omitempty"`
 	Bitclear string `yaml:",omitempty"`
 }
 
@@ -215,7 +215,7 @@ func (p *SpamPolicy) validate() error {
 		return err
 	}
 	opLength := uint32(len(data))
-	if opLength + p.Offset > 64 {
+	if opLength+p.Offset > 64 {
 		return fmt.Errorf("offset (%d) + operand length (%d) must be less than or equal to 64", p.Offset, opLength)
 	}
 	return nil
@@ -246,8 +246,8 @@ func (p *Policy) proto() (*policypb.Policy, error) {
 			}
 			pols = append(pols, pol)
 		}
-		result.Assertion = &policypb.Policy_And {
-			And: &policypb.And {
+		result.Assertion = &policypb.Policy_And{
+			And: &policypb.And{
 				Policy: pols,
 			},
 		}
@@ -260,8 +260,8 @@ func (p *Policy) proto() (*policypb.Policy, error) {
 			}
 			pols = append(pols, pol)
 		}
-		result.Assertion = &policypb.Policy_Or {
-			Or: &policypb.Or {
+		result.Assertion = &policypb.Policy_Or{
+			Or: &policypb.Or{
 				Policy: pols,
 			},
 		}
@@ -270,9 +270,9 @@ func (p *Policy) proto() (*policypb.Policy, error) {
 		if err != nil {
 			return nil, err
 		}
-		result.Assertion = &policypb.Policy_Rule {
-			Rule: &policypb.Rule {
-				Assertion: &policypb.Rule_Spam {
+		result.Assertion = &policypb.Policy_Rule{
+			Rule: &policypb.Rule{
+				Assertion: &policypb.Rule_Spam{
 					Spam: rule,
 				},
 			},
@@ -320,11 +320,11 @@ func (p *SpamPolicy) proto() (*policypb.SpamRule, error) {
 		return nil, fmt.Errorf("invalid operand for spam policy: %w", err)
 	}
 
-	return &policypb.SpamRule {
-		Index: p.Index,
-		Offset: p.Offset,
+	return &policypb.SpamRule{
+		Index:      p.Index,
+		Offset:     p.Offset,
 		Comparison: comparison,
-		Operand: operandData,
+		Operand:    operandData,
 	}, nil
 }
 
@@ -340,7 +340,7 @@ func fromProto(p *policypb.Policy) (*Policy, error) {
 			}
 			subPolicies = append(subPolicies, subPolicy)
 		}
-		return &Policy {
+		return &Policy{
 			And: subPolicies,
 		}, nil
 	case *policypb.Policy_Or:
@@ -352,7 +352,7 @@ func fromProto(p *policypb.Policy) (*Policy, error) {
 			}
 			subPolicies = append(subPolicies, subPolicy)
 		}
-		return &Policy {
+		return &Policy{
 			Or: subPolicies,
 		}, nil
 	case *policypb.Policy_Rule:
@@ -374,8 +374,8 @@ func fromRuleProto(r *policypb.Rule) (*Policy, error) {
 
 // fromProto converts from proto to internal ready-for-YAML spam rule form.
 func fromSpamRuleProto(r *policypb.SpamRule) (*Policy, error) {
-	result := SpamPolicy {
-		Index: r.Index,
+	result := SpamPolicy{
+		Index:  r.Index,
 		Offset: r.Offset,
 	}
 	hexOperand := "0x" + hex.EncodeToString(r.Operand)
@@ -400,7 +400,7 @@ func fromSpamRuleProto(r *policypb.SpamRule) (*Policy, error) {
 		return nil, fmt.Errorf("unrecognized comparison '%v'", r.Comparison)
 	}
 
-	return &Policy {
+	return &Policy{
 		Spam: &result,
 	}, nil
 }

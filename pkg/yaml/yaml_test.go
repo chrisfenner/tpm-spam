@@ -35,7 +35,7 @@ and:
 	proto := yaml.DecodeOrPanic(policy)
 	opts := prototext.MarshalOptions{
 		Multiline: true,
-		Indent: "  ",
+		Indent:    "  ",
 	}
 	fmt.Println(opts.Format(proto))
 }
@@ -73,15 +73,15 @@ and:
 	proto := yaml.DecodeOrPanic(policy)
 	opts := prototext.MarshalOptions{
 		Multiline: true,
-		Indent: "  ",
+		Indent:    "  ",
 	}
 	fmt.Println(opts.Format(proto))
 }
 
 func TestDecode(t *testing.T) {
-	cases := []struct{
-		name string
-		yamlRepr string
+	cases := []struct {
+		name      string
+		yamlRepr  string
 		protoRepr string
 	}{
 		{
@@ -145,8 +145,8 @@ and {
 }
 
 func TestEncode(t *testing.T) {
-	cases := []struct{
-		name string
+	cases := []struct {
+		name      string
 		protoRepr string
 	}{
 		{
