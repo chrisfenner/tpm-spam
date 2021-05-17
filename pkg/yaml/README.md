@@ -15,141 +15,22 @@ to be desired.
 See the following "simple" example of "just" an AND of two ORs of two spam
 policies each:
 
-```
-and:  {
-
-```go
-policy:  {
-  or:  {
-    policy:  {
-      rule:  {
-        spam:  {
-          index:  1
-          operand:  "\x00\x01\x02\x03\x04\x05\x06\x07"
-        }
-      }
-    }
-    policy:  {
-      rule:  {
-        spam:  {
-          index:  1
-          operand:  "\x08\t\n\x0b\x0c\r\x0e\x0f"
-        }
-      }
-    }
-  }
-}
-policy:  {
-  or:  {
-    policy:  {
-      rule:  {
-        spam:  {
-          index:  2
-          offset:  8
-          comparison:  GT
-          operand:  "\x00\x00\x00\x05"
-        }
-      }
-    }
-    policy:  {
-      rule:  {
-        spam:  {
-          index:  2
-          offset:  12
-          comparison:  GT
-          operand:  "\x00\x00\x00\n"
-        }
-      }
-    }
-  }
-}
-```
-
-}
-```
-
 YAML is a JSON-based text serialization format that has human readability as
 its top priority. The above textproto can be represented in just a few lines
 of YAML:
 
-```
-and:
-
-```diff
-- or:
-  - spam:
-      index: 1
-      offset: 0
-      eq: 0x0001020304050607
-  - spam:
-      index: 1
-      offset: 0
-      eq: 0x08090A0B0C0D0E0F
-- or:
-  - spam:
-      index: 2
-      offset: 8
-      gt: 0x00000005
-  - spam:
-      index: 2
-      offset: 12
-      gt: 0x0000000a
-```
-
-```
-
 For more complex policies, the `define` key may be used to set up anchors
-that can be referred to later, in the actual policy. Here is an equivalent
-policy:
-
-```
-define:
-
-```diff
-- &spam1_low
-    spam:
-      index: 1
-      offset: 0
-      eq: 0x0001020304050607
-- &spam1_high
-    spam:
-      index: 1
-      offset: 0
-      eq: 0x08090A0B0C0D0E0F
-- &spam2_major_version_greater_than_5
-    spam:
-      index: 2
-      offset: 8
-      gt: 0x00000005
-- &spam2_minor_version_greater_than_10
-    spam:
-      index: 2
-      offset: 12
-      gt: 0x0000000a
-```
-
-and:
-
-```diff
-- or:
-  - *spam1_low
-  - *spam1_high
-- or:
-  - *spam2_major_version_greater_than_5
-  - *spam2_minor_version_greater_than_10
-```
-
-```
+that can be referred to later, in the actual policy. See the below example.
 
 ## Functions
 
-### func [DebugString](/pkg/yaml/yaml.go#L475)
+### func [DebugString](/pkg/yaml/yaml.go#L372)
 
 `func DebugString(p *policypb.Policy) string`
 
 DebugString converts a spam policy into YAML or the error string from attempting to do so.
 
-### func [Decode](/pkg/yaml/yaml.go#L440)
+### func [Decode](/pkg/yaml/yaml.go#L337)
 
 `func Decode(s string) (*policypb.Policy, error)`
 
@@ -166,6 +47,18 @@ import (
 
 func main() {
 	policy := `
+# Set up some anchors - these aren't part of the parsed policy until aliased.
+define:
+  - &spam2_major_version_greater_than_5
+      spam:
+        index: 2
+        offset: 8
+        gt: 0x00000005
+  - &spam2_minor_version_greater_than_10
+      spam:
+        index: 2
+        offset: 12
+        gt: 0x0000000a
 and:
   - or:
     - spam:
@@ -177,14 +70,8 @@ and:
         offset: 0
         eq: 0x08090A0B0C0D0E0F
   - or:
-    - spam:
-        index: 2
-        offset: 8
-        gt: 0x00000005
-    - spam:
-        index: 2
-        offset: 12
-        gt: 0x0000000a`
+    - *spam2_major_version_greater_than_5
+    - *spam2_minor_version_greater_than_10`
 	proto := yaml.DecodeOrPanic(policy)
 	opts := prototext.MarshalOptions{
 		Multiline: true,
@@ -195,13 +82,13 @@ and:
 
 ```
 
-### func [DecodeOrPanic](/pkg/yaml/yaml.go#L452)
+### func [DecodeOrPanic](/pkg/yaml/yaml.go#L349)
 
 `func DecodeOrPanic(s string) *policypb.Policy`
 
 DecodeOrPanic parses a YAML document for a spam policy, or panics if there is an error.
 
-### func [Encode](/pkg/yaml/yaml.go#L461)
+### func [Encode](/pkg/yaml/yaml.go#L358)
 
 `func Encode(p *policypb.Policy) (*string, error)`
 
@@ -209,13 +96,13 @@ Encode converts a spam policy from the canonical protobuf form into more human-r
 
 ## Types
 
-### type [Policy](/pkg/yaml/yaml.go#L140)
+### type [Policy](/pkg/yaml/yaml.go#L37)
 
 `type Policy struct { ... }`
 
 INTERNAL: Only exported for manipulation by the `yaml` package.
 
-### type [SpamPolicy](/pkg/yaml/yaml.go#L149)
+### type [SpamPolicy](/pkg/yaml/yaml.go#L46)
 
 `type SpamPolicy struct { ... }`
 
