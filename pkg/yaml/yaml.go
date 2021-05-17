@@ -13,115 +13,12 @@
 // See the following "simple" example of "just" an AND of two ORs of two spam
 // policies each:
 //
-// ```
-// and:  {
-//   policy:  {
-//     or:  {
-//       policy:  {
-//         rule:  {
-//           spam:  {
-//             index:  1
-//             operand:  "\x00\x01\x02\x03\x04\x05\x06\x07"
-//           }
-//         }
-//       }
-//       policy:  {
-//         rule:  {
-//           spam:  {
-//             index:  1
-//             operand:  "\x08\t\n\x0b\x0c\r\x0e\x0f"
-//           }
-//         }
-//       }
-//     }
-//   }
-//   policy:  {
-//     or:  {
-//       policy:  {
-//         rule:  {
-//           spam:  {
-//             index:  2
-//             offset:  8
-//             comparison:  GT
-//             operand:  "\x00\x00\x00\x05"
-//           }
-//         }
-//       }
-//       policy:  {
-//         rule:  {
-//           spam:  {
-//             index:  2
-//             offset:  12
-//             comparison:  GT
-//             operand:  "\x00\x00\x00\n"
-//           }
-//         }
-//       }
-//     }
-//   }
-// }
-// ```
-//
 // YAML is a JSON-based text serialization format that has human readability as
 // its top priority. The above textproto can be represented in just a few lines
 // of YAML:
 //
-// ```
-// and:
-//  - or:
-//    - spam:
-//        index: 1
-//        offset: 0
-//        eq: 0x0001020304050607
-//    - spam:
-//        index: 1
-//        offset: 0
-//        eq: 0x08090A0B0C0D0E0F
-//  - or:
-//    - spam:
-//        index: 2
-//        offset: 8
-//        gt: 0x00000005
-//    - spam:
-//        index: 2
-//        offset: 12
-//        gt: 0x0000000a
-//```
-//
 // For more complex policies, the `define` key may be used to set up anchors
-// that can be referred to later, in the actual policy. Here is an equivalent
-// policy:
-//
-// ```
-// define:
-//   - &spam1_low
-//       spam:
-//         index: 1
-//         offset: 0
-//         eq: 0x0001020304050607
-//   - &spam1_high
-//       spam:
-//         index: 1
-//         offset: 0
-//         eq: 0x08090A0B0C0D0E0F
-//   - &spam2_major_version_greater_than_5
-//       spam:
-//         index: 2
-//         offset: 8
-//         gt: 0x00000005
-//   - &spam2_minor_version_greater_than_10
-//       spam:
-//         index: 2
-//         offset: 12
-//         gt: 0x0000000a
-// and:
-//   - or:
-//     - *spam1_low
-//     - *spam1_high
-//   - or:
-//     - *spam2_major_version_greater_than_5
-//     - *spam2_minor_version_greater_than_10
-// ```
+// that can be referred to later, in the actual policy. See the below example.
 package yaml
 
 import (

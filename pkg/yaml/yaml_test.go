@@ -13,46 +13,8 @@ import (
 
 func ExampleDecode() {
 	policy := `
-and:
-  - or:
-    - spam:
-        index: 1
-        offset: 0
-        eq: 0x0001020304050607
-    - spam:
-        index: 1
-        offset: 0
-        eq: 0x08090A0B0C0D0E0F
-  - or:
-    - spam:
-        index: 2
-        offset: 8
-        gt: 0x00000005
-    - spam:
-        index: 2
-        offset: 12
-        gt: 0x0000000a`
-	proto := yaml.DecodeOrPanic(policy)
-	opts := prototext.MarshalOptions{
-		Multiline: true,
-		Indent:    "  ",
-	}
-	fmt.Println(opts.Format(proto))
-}
-
-func ExampleDecode_Aliasing() {
-	policy := `
+# Set up some anchors - these aren't part of the parsed policy until aliased.
 define:
-  - &spam1_low
-      spam:
-        index: 1
-        offset: 0
-        eq: 0x0001020304050607
-  - &spam1_high
-      spam:
-        index: 1
-        offset: 0
-        eq: 0x08090A0B0C0D0E0F
   - &spam2_major_version_greater_than_5
       spam:
         index: 2
@@ -65,8 +27,14 @@ define:
         gt: 0x0000000a
 and:
   - or:
-    - *spam1_low
-    - *spam1_high
+    - spam:
+        index: 1
+        offset: 0
+        eq: 0x0001020304050607
+    - spam:
+        index: 1
+        offset: 0
+        eq: 0x08090A0B0C0D0E0F
   - or:
     - *spam2_major_version_greater_than_5
     - *spam2_minor_version_greater_than_10`
