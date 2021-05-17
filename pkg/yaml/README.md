@@ -12,25 +12,21 @@ types, while Go does not.
 That being said, for human consumption, textproto spam policies leave a bit
 to be desired.
 
-See the following "simple" example of "just" an AND of two ORs of two spam
-policies each:
-
 YAML is a JSON-based text serialization format that has human readability as
-its top priority. The above textproto can be represented in just a few lines
-of YAML:
+its top priority.
 
-For more complex policies, the `define` key may be used to set up anchors
+For very complex policies, the `define` key may be used to set up anchors
 that can be referred to later, in the actual policy. See the below example.
 
 ## Functions
 
-### func [DebugString](/pkg/yaml/yaml.go#L372)
+### func [DebugString](/pkg/yaml/yaml.go#L368)
 
 `func DebugString(p *policypb.Policy) string`
 
 DebugString converts a spam policy into YAML or the error string from attempting to do so.
 
-### func [Decode](/pkg/yaml/yaml.go#L337)
+### func [Decode](/pkg/yaml/yaml.go#L333)
 
 `func Decode(s string) (*policypb.Policy, error)`
 
@@ -82,13 +78,13 @@ and:
 
 ```
 
-### func [DecodeOrPanic](/pkg/yaml/yaml.go#L349)
+### func [DecodeOrPanic](/pkg/yaml/yaml.go#L345)
 
 `func DecodeOrPanic(s string) *policypb.Policy`
 
 DecodeOrPanic parses a YAML document for a spam policy, or panics if there is an error.
 
-### func [Encode](/pkg/yaml/yaml.go#L358)
+### func [Encode](/pkg/yaml/yaml.go#L354)
 
 `func Encode(p *policypb.Policy) (*string, error)`
 
@@ -96,13 +92,13 @@ Encode converts a spam policy from the canonical protobuf form into more human-r
 
 ## Types
 
-### type [Policy](/pkg/yaml/yaml.go#L37)
+### type [Policy](/pkg/yaml/yaml.go#L33)
 
 `type Policy struct { ... }`
 
 INTERNAL: Only exported for manipulation by the `yaml` package.
 
-### type [SpamPolicy](/pkg/yaml/yaml.go#L46)
+### type [SpamPolicy](/pkg/yaml/yaml.go#L42)
 
 `type SpamPolicy struct { ... }`
 
