@@ -85,12 +85,43 @@
 //    - spam:
 //        index: 2
 //        offset: 12
-//        gt: 0x0000000a`
+//        gt: 0x0000000a
 //```
 //
 // For more complex policies, the `define` key may be used to set up anchors
-// that can be referred to later, in the actual policy. See the second `Decode`
-// example to see how this can work.
+// that can be referred to later, in the actual policy. Here is an equivalent
+// policy:
+//
+// ```
+// define:
+//   - &spam1_low
+//       spam:
+//         index: 1
+//         offset: 0
+//         eq: 0x0001020304050607
+//   - &spam1_high
+//       spam:
+//         index: 1
+//         offset: 0
+//         eq: 0x08090A0B0C0D0E0F
+//   - &spam2_major_version_greater_than_5
+//       spam:
+//         index: 2
+//         offset: 8
+//         gt: 0x00000005
+//   - &spam2_minor_version_greater_than_10
+//       spam:
+//         index: 2
+//         offset: 12
+//         gt: 0x0000000a
+// and:
+//   - or:
+//     - *spam1_low
+//     - *spam1_high
+//   - or:
+//     - *spam2_major_version_greater_than_5
+//     - *spam2_minor_version_greater_than_10
+// ```
 package yaml
 
 import (
