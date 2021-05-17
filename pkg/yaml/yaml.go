@@ -10,14 +10,10 @@
 // That being said, for human consumption, textproto spam policies leave a bit
 // to be desired.
 //
-// See the following "simple" example of "just" an AND of two ORs of two spam
-// policies each:
-//
 // YAML is a JSON-based text serialization format that has human readability as
-// its top priority. The above textproto can be represented in just a few lines
-// of YAML:
+// its top priority.
 //
-// For more complex policies, the `define` key may be used to set up anchors
+// For very complex policies, the `define` key may be used to set up anchors
 // that can be referred to later, in the actual policy. See the below example.
 package yaml
 
