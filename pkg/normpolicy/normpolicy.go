@@ -63,8 +63,7 @@ func normalizeAnd(and *policypb.And) ([][]*policypb.Rule, error) {
 			return nil, fmt.Errorf("invalid AND: invalid subpolicy %d: %w", i, err)
 		}
 		// Calculate the Cartesian product of the running policy with the next policy.
-		// TODO: Reduce the number of reallocations here.
-		var newRes [][]*policypb.Rule
+		newRes := make([][]*policypb.Rule, 0, len(res) * len(normalized))
 		for _, originalPolicy := range res {
 			for _, nextPolicy := range normalized {
 				newRes = append(newRes, append(originalPolicy, nextPolicy...))
