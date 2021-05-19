@@ -12,7 +12,7 @@ NormalizedPolicy represents the normalized OR/AND list-of-lists form of a policy
 
 #### func [Normalize](/pkg/normpolicy/normpolicy.go#L34)
 
-`func Normalize(policy *policypb.Policy) (NormalizedPolicy, error)`
+`func Normalize(p *policypb.Policy) (NormalizedPolicy, error)`
 
 Normalize simplifies the policy tree (arbitrary AND/OR tree) into OR/AND list-of-lists form.
 This function returns the equivalent policy as a list of list of Rules.

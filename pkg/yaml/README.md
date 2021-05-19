@@ -18,15 +18,24 @@ its top priority.
 For very complex policies, the `define` key may be used to set up anchors
 that can be referred to later, in the actual policy. See the below example.
 
+## Variables
+
+```golang
+var (
+    ErrBadSumType     = errors.New("too many members were set on this sum type")
+    ErrInvalidOperand = errors.New("operand must be 0x followed by a hex string of at least 1 byte")
+)
+```
+
 ## Functions
 
-### func [DebugString](/pkg/yaml/yaml.go#L368)
+### func [DebugString](/pkg/yaml/yaml.go#L374)
 
 `func DebugString(p *policypb.Policy) string`
 
 DebugString converts a spam policy into YAML or the error string from attempting to do so.
 
-### func [Decode](/pkg/yaml/yaml.go#L333)
+### func [Decode](/pkg/yaml/yaml.go#L339)
 
 `func Decode(s string) (*policypb.Policy, error)`
 
@@ -78,13 +87,13 @@ and:
 
 ```
 
-### func [DecodeOrPanic](/pkg/yaml/yaml.go#L345)
+### func [DecodeOrPanic](/pkg/yaml/yaml.go#L351)
 
 `func DecodeOrPanic(s string) *policypb.Policy`
 
 DecodeOrPanic parses a YAML document for a spam policy, or panics if there is an error.
 
-### func [Encode](/pkg/yaml/yaml.go#L354)
+### func [Encode](/pkg/yaml/yaml.go#L360)
 
 `func Encode(p *policypb.Policy) (*string, error)`
 
@@ -92,13 +101,13 @@ Encode converts a spam policy from the canonical protobuf form into more human-r
 
 ## Types
 
-### type [Policy](/pkg/yaml/yaml.go#L33)
+### type [Policy](/pkg/yaml/yaml.go#L39)
 
 `type Policy struct { ... }`
 
 INTERNAL: Only exported for manipulation by the `yaml` package.
 
-### type [SpamPolicy](/pkg/yaml/yaml.go#L42)
+### type [SpamPolicy](/pkg/yaml/yaml.go#L48)
 
 `type SpamPolicy struct { ... }`
 

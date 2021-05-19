@@ -49,25 +49,25 @@ const TPMSpamOffset = 0x017F0000
 
 ## Functions
 
-### func [Handle](/pkg/spamdef/spamdef.go#L54)
+### func [Handle](/pkg/spamdef/spamdef.go#L55)
 
 `func Handle(index uint16) (*tpmutil.Handle, error)`
 
 Handle returns the TPM NV index associated with the given spam handle.
 
-### func [Name](/pkg/spamdef/spamdef.go#L89)
+### func [Name](/pkg/spamdef/spamdef.go#L90)
 
 `func Name(index uint16) ([]byte, error)`
 
 Name returns the TPM name for a spam index.
 
-### func [Policy](/pkg/spamdef/spamdef.go#L82)
+### func [Policy](/pkg/spamdef/spamdef.go#L83)
 
 `func Policy(alg crypto.Hash) ([]byte, error)`
 
 Policy returns the Policy hash for defining a TPM NV index as spam.
 
-### func [Template](/pkg/spamdef/spamdef.go#L63)
+### func [Template](/pkg/spamdef/spamdef.go#L64)
 
 `func Template(index uint16) (*tpm2.NVPublic, error)`
 

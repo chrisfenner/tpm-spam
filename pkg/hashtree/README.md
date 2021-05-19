@@ -2,9 +2,19 @@
 
 package hashtree provides helpers for building and walking TPM2 PolicyOR trees.
 
+## Variables
+
+```golang
+var (
+    ErrNodeIndexOutOfBounds = errors.New("node index out of bounds")
+    ErrEmptyTree            = errors.New("tree is empty")
+    ErrNodeNotAChild        = errors.New("node not a child")
+)
+```
+
 ## Types
 
-### type [PolicyHashTree](/pkg/hashtree/hashtree.go#L19)
+### type [PolicyHashTree](/pkg/hashtree/hashtree.go#L26)
 
 `type PolicyHashTree [][]byte`
 
@@ -12,37 +22,31 @@ PolicyHashTree represents a TPM2_PolicyOR tree as a complete 8-tree, where all i
 commands, and all leaf nodes represent concrete policies used to create the tree.
 normalized sublist's policy.
 
-#### func [Build](/pkg/hashtree/hashtree.go#L32)
+#### func [Build](/pkg/hashtree/hashtree.go#L37)
 
 `func Build(alg crypto.Hash, leaves [][]byte) (*PolicyHashTree, error)`
 
 Build creates a PolicyHashTree holding the given leaves.
 
-#### func (PolicyHashTree) [At](/pkg/hashtree/hashtree.go#L27)
-
-`func (t PolicyHashTree) At(node int) []byte`
-
-At returns the hash at the given internal or leaf node.
-
-#### func (PolicyHashTree) [ChildrenOf](/pkg/hashtree/hashtree.go#L52)
+#### func (PolicyHashTree) [ChildrenOf](/pkg/hashtree/hashtree.go#L57)
 
 `func (t PolicyHashTree) ChildrenOf(index int) [][]byte`
 
 ChildrenOf returns the digests of all the children of the given internal node. If the node is a leaf node, returns nil.
 
-#### func (PolicyHashTree) [LeafIndex](/pkg/hashtree/hashtree.go#L82)
+#### func (PolicyHashTree) [LeafIndex](/pkg/hashtree/hashtree.go#L87)
 
 `func (t PolicyHashTree) LeafIndex(i int) (*int, error)`
 
 LeafIndex returns the index of the given leaf in the tree.
 
-#### func (PolicyHashTree) [Root](/pkg/hashtree/hashtree.go#L22)
+#### func (PolicyHashTree) [Root](/pkg/hashtree/hashtree.go#L29)
 
-`func (t PolicyHashTree) Root() []byte`
+`func (t PolicyHashTree) Root() ([]byte, error)`
 
 Root returns the root of the tree.
 
-#### func (PolicyHashTree) [RunOr](/pkg/hashtree/hashtree.go#L65)
+#### func (PolicyHashTree) [RunOr](/pkg/hashtree/hashtree.go#L70)
 
 `func (tree PolicyHashTree) RunOr(tpm io.ReadWriter, s tpmutil.Handle, index int) error`
 
