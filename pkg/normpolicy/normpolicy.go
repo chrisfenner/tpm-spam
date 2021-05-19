@@ -31,8 +31,8 @@ type NormalizedPolicy [][]*policypb.Rule
 // (2) requires an even more complex "normal form" of "OR/AND list-of-lists followed by extra
 // sequence of shared AND-rules" and does not reduce the number of ORed-together branches or the
 // length of the executed policy.
-func Normalize(policy *policypb.Policy) (NormalizedPolicy, error) {
-	switch x := policy.Assertion.(type) {
+func Normalize(p *policypb.Policy) (NormalizedPolicy, error) {
+	switch x := p.Assertion.(type) {
 	case *policypb.Policy_Rule:
 		return normalizeRule(x.Rule)
 	case *policypb.Policy_And:
@@ -40,7 +40,7 @@ func Normalize(policy *policypb.Policy) (NormalizedPolicy, error) {
 	case *policypb.Policy_Or:
 		return normalizeOr(x.Or)
 	}
-	return nil, fmt.Errorf("unrecognized policy type: %v", policy.Assertion)
+	return nil, policy.InvalidPolicyError{p, policy.ErrInvalidAssertion}
 }
 
 func normalizeRule(rule *policypb.Rule) ([][]*policypb.Rule, error) {
@@ -50,7 +50,7 @@ func normalizeRule(rule *policypb.Rule) ([][]*policypb.Rule, error) {
 
 func normalizeAnd(and *policypb.And) ([][]*policypb.Rule, error) {
 	if len(and.Policy) == 0 {
-		return nil, fmt.Errorf("invalid AND: no subpolicies")
+		return nil, fmt.Errorf("invalid AND: %w", policy.ErrNoSubpolicies)
 	}
 	res, err := Normalize(and.Policy[0])
 	// the normal form of an AND rule is the Cartesian product of the normalized sub-policies.
@@ -77,7 +77,7 @@ func normalizeAnd(and *policypb.And) ([][]*policypb.Rule, error) {
 
 func normalizeOr(or *policypb.Or) ([][]*policypb.Rule, error) {
 	if len(or.Policy) == 0 {
-		return nil, fmt.Errorf("invalid OR: no subpolicies")
+		return nil, fmt.Errorf("invalid OR: %w", policy.ErrNoSubpolicies)
 	}
 	// the normal form of an OR rule is the concatenation of the normalized sub-policies.
 	var res [][]*policypb.Rule

@@ -3,6 +3,7 @@ package hashtree
 
 import (
 	"crypto"
+	"errors"
 	"fmt"
 	"io"
 
@@ -13,19 +14,23 @@ import (
 	"github.com/chrisfenner/tpm-spam/pkg/eighttree"
 )
 
+var (
+	ErrNodeIndexOutOfBounds = errors.New("node index out of bounds")
+	ErrEmptyTree = errors.New("tree is empty")
+	ErrNodeNotAChild = errors.New("node not a child")
+)
+
 // PolicyHashTree represents a TPM2_PolicyOR tree as a complete 8-tree, where all internal nodes are hashes of PolicyOR
 // commands, and all leaf nodes represent concrete policies used to create the tree.
 // normalized sublist's policy.
 type PolicyHashTree [][]byte
 
 // Root returns the root of the tree.
-func (t PolicyHashTree) Root() []byte {
-	return t[0]
-}
-
-// At returns the hash at the given internal or leaf node.
-func (t PolicyHashTree) At(node int) []byte {
-	return t[node]
+func (t PolicyHashTree) Root() ([]byte, error) {
+	if len(t) == 0 {
+		return nil, fmt.Errorf("%w", ErrEmptyTree)
+	}
+	return t[0], nil
 }
 
 // Build creates a PolicyHashTree holding the given leaves.
@@ -64,10 +69,10 @@ func (t PolicyHashTree) ChildrenOf(index int) [][]byte {
 // RunOr runs the PolicyOr command to go from the given node to its parent, in the given TPM session handle.
 func (tree PolicyHashTree) RunOr(tpm io.ReadWriter, s tpmutil.Handle, index int) error {
 	if index <= 0 {
-		return fmt.Errorf("specified node %d has no parent", index)
+		return fmt.Errorf("%d: %w", index, ErrNodeNotAChild)
 	}
 	if index >= len(tree) {
-		return fmt.Errorf("specified node %d does not exist", index)
+		return fmt.Errorf("%d: %w", index, ErrNodeIndexOutOfBounds)
 	}
 	parent := eighttree.ParentIndex(index)
 	ors := tree.ChildrenOf(parent)
@@ -85,7 +90,7 @@ func (t PolicyHashTree) LeafIndex(i int) (*int, error) {
 		return nil, fmt.Errorf("invalid tree: %w", err)
 	}
 	if (internal + i) >= len(t) {
-		return nil, fmt.Errorf("policy tree does not have %d leaves", i)
+		return nil, fmt.Errorf("leaf %d: %w", i, ErrNodeIndexOutOfBounds)
 	}
 	result := internal + i
 	return &result, nil
@@ -107,10 +112,9 @@ func (t PolicyHashTree) leaf(i int) (*[]byte, error) {
 func internalPolicy(policy *[]byte, t PolicyHashTree, index int, alg crypto.Hash) error {
 	children := t.ChildrenOf(index)
 	result := make([]byte, alg.Size())
-	args := []interface{}{
-		result, uint32(0x171),
-	}
-	// TODO: clean up this copy that gets around inability to cast [][]byte to []interface{}
+	args := make([]interface{}, 0, 2 + len(children))
+	args = append(args, result)
+	args = append(args, uint32(0x171))
 	for _, child := range children {
 		args = append(args, child)
 	}

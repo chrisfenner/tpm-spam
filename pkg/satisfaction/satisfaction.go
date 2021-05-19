@@ -4,12 +4,17 @@ package satisfaction
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/chrisfenner/tpm-spam/pkg/normpolicy"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/chrisfenner/tpm-spam/pkg/tpmstate"
+)
+
+var (
+	ErrUnsatisfiable = errors.New("policy could not be satisfied")
 )
 
 // FirstSatisfiable finds the index of the first satisfiable policy branch, or returns an error if no policy was satisfiable.
@@ -26,7 +31,7 @@ func FirstSatisfiable(policies normpolicy.NormalizedPolicy, currentState *tpmsta
 			return &i, nil
 		}
 	}
-	return nil, fmt.Errorf("unsatisfiable spam policy")
+	return nil, fmt.Errorf("%w", ErrUnsatisfiable)
 }
 
 // isSatisfiable returns whether a rule would pass if enforced by the TPM whose

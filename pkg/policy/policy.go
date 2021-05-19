@@ -4,6 +4,7 @@ package policy
 
 import (
 	"crypto"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -15,6 +16,28 @@ import (
 	"github.com/chrisfenner/tpm-spam/pkg/behash"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
 	"github.com/chrisfenner/tpm-spam/pkg/spamdef"
+)
+
+// InvalidPolicyError indicates that something is wrong with a spam policy.
+type InvalidPolicyError struct {
+	Policy interface{}
+	Err error
+}
+func (e InvalidPolicyError) Error() string {
+	return fmt.Sprintf("invalid policy: %v:\n%+v", e.Err, e.Policy)
+}
+func (e InvalidPolicyError) Unwrap() error {
+	return e.Err
+}
+
+var (
+	ErrInvalidType = errors.New("invalid type")
+	ErrInvalidIndex = errors.New("invalid index")
+	ErrInvalidComparison = errors.New("invalid comparison")
+	ErrInvalidAssertion = errors.New("invalid assertion")
+	ErrNoSubpolicies = errors.New("no subpolicies")
+	ErrOverflow = errors.New("offset + data length > 64")
+	ErrNilPolicy = errors.New("nil policy")
 )
 
 // For calculates the TPM policy hash for the given sequence of rules, with the specified algorithm.
@@ -36,7 +59,7 @@ func Extend(alg crypto.Hash, currentPolicy []byte, rule *policypb.Rule) ([]byte,
 	case *policypb.Rule_Spam:
 		return extendSpamPolicy(currentPolicy, x.Spam, alg)
 	default:
-		return nil, fmt.Errorf("unrecognized rule type: %v", x)
+		return nil, InvalidPolicyError{rule, ErrInvalidType}
 	}
 }
 
@@ -46,18 +69,18 @@ func RunRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.Rule) error {
 	case *policypb.Rule_Spam:
 		return spamPolicyRule(tpm, s, x.Spam)
 	default:
-		return fmt.Errorf("unrecognized rule type: %v", x)
+		return InvalidPolicyError{r, ErrInvalidType}
 	}
 }
 
 // extendSpamPolicy calculates the policy hash for a SpamRule (which is a type of TPM2_PolicyNV)
 func extendSpamPolicy(currentPolicy []byte, rule *policypb.SpamRule, alg crypto.Hash) ([]byte, error) {
 	if rule.Index > math.MaxUint16 {
-		return nil, fmt.Errorf("invalid spam index %d", rule.Index)
+		return nil, InvalidPolicyError{rule, ErrInvalidIndex}
 	}
 	operation, err := operation(rule.Comparison)
 	if err != nil {
-		return nil, err
+		return nil, InvalidPolicyError{rule, err}
 	}
 
 	args, err := behash.HashItems(alg, rule.Operand, uint16(rule.Offset), *operation)
@@ -79,11 +102,8 @@ func spamPolicyRule(tpm io.ReadWriter, s tpmutil.Handle, r *policypb.SpamRule) e
 	}
 	operand := tpmutil.U16Bytes(r.Operand)
 	offset := uint16(r.Offset)
-	if uint32(offset) != r.Offset {
-		return fmt.Errorf("invalid offset: %v", r.Offset)
-	}
-	if int(offset)+len(operand) > 64 {
-		return fmt.Errorf("invalid offset and operand length: %v bytes starting at %v", len(operand), r.Offset)
+	if uint32(offset) != r.Offset || int(offset)+len(operand) > 64 {
+		return InvalidPolicyError{r, ErrOverflow}
 	}
 	operation, err := operation(r.Comparison)
 	if err != nil {
@@ -113,7 +133,7 @@ func operation(comp policypb.Comparison) (*tpm2.EO, error) {
 	case policypb.Comparison_BITCLEAR:
 		result = tpm2.EOBitClear
 	default:
-		return nil, fmt.Errorf("invalid comparison %v", comp)
+		return nil, ErrInvalidComparison
 	}
 	return &result, nil
 }
