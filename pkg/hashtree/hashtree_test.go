@@ -220,11 +220,11 @@ spam { index: 3 offset: 3 comparison: LTE operand: "\xff" }
 					if err != nil {
 						t.Fatalf("PolicyGetDigest: %v", err)
 					}
-					if !bytes.Equal(digest, tree.At(*node)) {
+					if !bytes.Equal(digest, (*(*[][]byte)(tree))[*node]) {
 						t.Errorf("for node %d want:\n%s\ngot:\n%s\n",
 							*node,
 							hex.EncodeToString(digest),
-							hex.EncodeToString(tree.At(*node)))
+							hex.EncodeToString((*(*[][]byte)(tree))[*node]))
 					}
 				}
 			})

@@ -121,7 +121,7 @@ func GetPolicy(policy *policypb.Policy) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return tree.Root(), nil
+	return tree.Root()
 }
 
 // Undefine undefines the spam at the specified slot.

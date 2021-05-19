@@ -19,14 +19,20 @@ package yaml
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math"
-	"reflect"
 	"strings"
 
 	"gopkg.in/yaml.v2"
 
+	"github.com/chrisfenner/tpm-spam/pkg/policy"
 	"github.com/chrisfenner/tpm-spam/pkg/policypb"
+)
+
+var (
+	ErrBadSumType = errors.New("too many members were set on this sum type")
+	ErrInvalidOperand = errors.New("operand must be 0x followed by a hex string of at least 1 byte")
 )
 
 // INTERNAL: Only exported for manipulation by the `yaml` package.
@@ -55,7 +61,7 @@ type SpamPolicy struct {
 // validate checks that policy data from a YAML document is a valid policy.
 func (p *Policy) validate() error {
 	if p == nil {
-		return fmt.Errorf("invalid: nil policy")
+		return policy.ErrNilPolicy
 	}
 	pop := 0
 	if len(p.And) != 0 {
@@ -81,7 +87,7 @@ func (p *Policy) validate() error {
 		}
 	}
 	if pop != 1 {
-		return fmt.Errorf("exactly one of (and, or, spam) required for policy node")
+		return policy.InvalidPolicyError{p, ErrBadSumType}
 	}
 	return nil
 }
@@ -89,13 +95,13 @@ func (p *Policy) validate() error {
 // validate checks that policy data from a YAML document is a valid spam policy.
 func (p *SpamPolicy) validate() error {
 	if p == nil {
-		return fmt.Errorf("invalid: nil policy")
+		return policy.ErrNilPolicy
 	}
 	if p.Index < 0 || p.Index > math.MaxUint16 {
-		return fmt.Errorf("invalid index: %d", p.Index)
+		return policy.InvalidPolicyError{p, policy.ErrInvalidIndex}
 	}
 	if p.Offset < 0 || p.Offset >= 64 {
-		return fmt.Errorf("invalid offset: %d", p.Offset)
+		return policy.InvalidPolicyError{p, policy.ErrOverflow}
 	}
 	var operand *string
 	pop := 0
@@ -132,7 +138,7 @@ func (p *SpamPolicy) validate() error {
 		operand = &p.Bitclear
 	}
 	if pop != 1 {
-		return fmt.Errorf("exactly one of (eq, neq, gt, gte, lt, lte, bitset, bitclear) required for spam policy node")
+		return policy.InvalidPolicyError{p, ErrBadSumType}
 	}
 	data, err := dataFromOperand(*operand)
 	if err != nil {
@@ -140,7 +146,7 @@ func (p *SpamPolicy) validate() error {
 	}
 	opLength := uint32(len(data))
 	if opLength+p.Offset > 64 {
-		return fmt.Errorf("offset (%d) + operand length (%d) must be less than or equal to 64", p.Offset, opLength)
+		return policy.InvalidPolicyError{p, policy.ErrOverflow}
 	}
 	return nil
 }
@@ -148,11 +154,11 @@ func (p *SpamPolicy) validate() error {
 // dataFromOperand decodes a hex string, which must be of the form "0x..."
 func dataFromOperand(op string) ([]byte, error) {
 	if len(op) < 4 || strings.ToLower(op[:2]) != "0x" {
-		return nil, fmt.Errorf("operand must be 0x followed by a hex string of at least 1 byte")
+		return nil, fmt.Errorf("%w: must be 0x followed by hex", ErrInvalidOperand)
 	}
 	data, err := hex.DecodeString(op[2:])
 	if err != nil {
-		return nil, fmt.Errorf("could not decode hex operand: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrInvalidOperand, err)
 	}
 	return data, nil
 }
@@ -236,12 +242,12 @@ func (p *SpamPolicy) proto() (*policypb.SpamRule, error) {
 		comparison = policypb.Comparison_BITCLEAR
 		operand = &p.Bitclear
 	default:
-		return nil, fmt.Errorf("unrecognized comparison for spam policy: %+v", p)
+		return nil, policy.InvalidPolicyError{p, policy.ErrInvalidComparison}
 	}
 
 	operandData, err := dataFromOperand(*operand)
 	if err != nil {
-		return nil, fmt.Errorf("invalid operand for spam policy: %w", err)
+		return nil, policy.InvalidPolicyError{p, err}
 	}
 
 	return &policypb.SpamRule{
@@ -282,7 +288,7 @@ func fromProto(p *policypb.Policy) (*Policy, error) {
 	case *policypb.Policy_Rule:
 		return fromRuleProto(x.Rule)
 	default:
-		return nil, fmt.Errorf("unknown policy node type: %v", reflect.TypeOf(p.Assertion))
+		return nil, policy.InvalidPolicyError{p, policy.ErrInvalidAssertion}
 	}
 }
 
@@ -292,7 +298,7 @@ func fromRuleProto(r *policypb.Rule) (*Policy, error) {
 	case *policypb.Rule_Spam:
 		return fromSpamRuleProto(x.Spam)
 	default:
-		return nil, fmt.Errorf("unrecognized rule type: %v", x)
+		return nil, policy.InvalidPolicyError{r, policy.ErrInvalidType}
 	}
 }
 
@@ -321,7 +327,7 @@ func fromSpamRuleProto(r *policypb.SpamRule) (*Policy, error) {
 	case policypb.Comparison_BITCLEAR:
 		result.Bitclear = hexOperand
 	default:
-		return nil, fmt.Errorf("unrecognized comparison '%v'", r.Comparison)
+		return nil, policy.InvalidPolicyError{r, policy.ErrInvalidComparison}
 	}
 
 	return &Policy{
@@ -336,7 +342,7 @@ func Decode(s string) (*policypb.Policy, error) {
 		return nil, fmt.Errorf("could not unmarshal YAML policy: %w", err)
 	}
 	if err := pol.validate(); err != nil {
-		return nil, fmt.Errorf("invalid policy: %w", err)
+		return nil, err
 	}
 	return pol.proto()
 }

@@ -7,6 +7,7 @@ import (
 	"crypto"
 	"encoding/binary"
 	"fmt"
+	"math"
 
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
@@ -52,7 +53,7 @@ const TPMSpamAttributes tpm2.NVAttr = tpm2.AttrPolicyWrite |
 
 // Handle returns the TPM NV index associated with the given spam handle.
 func Handle(index uint16) (*tpmutil.Handle, error) {
-	if index > 0xffff {
+	if index > math.MaxUint16 {
 		return nil, fmt.Errorf("invalid spam index %d (must be a uint16)", index)
 	}
 	result := tpmutil.Handle(TPMSpamOffset + uint32(index))

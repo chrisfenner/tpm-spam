@@ -2,7 +2,12 @@
 package eighttree
 
 import (
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrInvalidTree = errors.New("invalid tree")
 )
 
 // InternalCountFromLeaves returns the number of internal nodes needed to store the given number of
@@ -32,7 +37,7 @@ func InternalCountFromTotal(totalNodes int) (int, error) {
 	// There are a number of invalid total amounts of leaves: 2, 10, 18, ..., 8n + 2.
 	// This is because promoting a leaf to an internal node gives it two children.
 	if (totalNodes < 1) || ((totalNodes-2)%8 == 0) {
-		return 0, fmt.Errorf("invalid total node count: %d", totalNodes)
+		return 0, fmt.Errorf("%w: %d nodes", ErrInvalidTree, totalNodes)
 	}
 	// 3-9 total nodes have 1 internal node (A with 1-8 leaves).
 	// 11-17 total have 2 internal (A with B and 7 leaves; B with 2-8 leaves).
