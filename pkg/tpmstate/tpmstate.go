@@ -4,9 +4,12 @@ package tpmstate
 import (
 	"fmt"
 	"io"
+	"math"
 
 	"github.com/chrisfenner/go-tpm/tpm2"
 	"github.com/chrisfenner/go-tpm/tpmutil"
+
+	"github.com/chrisfenner/tpm-spam/pkg/spamdef"
 )
 
 // SpamContents represents the contents of a spam.
@@ -18,11 +21,9 @@ type TpmState struct {
 }
 
 // CurrentTpmState queries the TPM for its current spam-relevant state.
-//
-// TODO: Clean up this function, it has a lot of magic numbers and casts.
 func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 	spams := make(map[uint16]SpamContents)
-	for handle := uint32(0x017F0000); handle < uint32(0x01800000); handle++ {
+	for handle := uint32(spamdef.TPMSpamOffset); handle <= uint32(spamdef.TPMSpamOffset + math.MaxUint16); handle++ {
 		handles, _, err := tpm2.GetCapability(tpm, tpm2.CapabilityHandles, 8, handle)
 		if err != nil {
 			return nil, err
@@ -35,15 +36,15 @@ func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 			if uint32(hdl) > handle {
 				handle = uint32(hdl)
 			}
-			if uint32(hdl) >= uint32(0x01800000) {
+			if uint32(hdl) > uint32(spamdef.TPMSpamOffset + math.MaxUint16) {
 				continue
 			}
 			data, err := tpm2.NVReadEx(tpm, hdl, hdl, "", 64)
 			if err != nil || len(data) != 64 {
-				// Don't worry about this one
+				// There was a problem reading this index, maybe it's not a spam.
 				continue
 			}
-			spamIndex := uint16(uint32(hdl) - 0x017F0000)
+			spamIndex := uint16(uint32(hdl) - spamdef.TPMSpamOffset)
 			var spam SpamContents
 			copy(spam[:], data)
 			spams[spamIndex] = spam
