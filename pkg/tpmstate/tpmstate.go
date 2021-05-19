@@ -23,7 +23,7 @@ type TpmState struct {
 // CurrentTpmState queries the TPM for its current spam-relevant state.
 func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 	spams := make(map[uint16]SpamContents)
-	for handle := uint32(spamdef.TPMSpamOffset); handle <= uint32(spamdef.TPMSpamOffset + math.MaxUint16); handle++ {
+	for handle := uint32(spamdef.TPMSpamOffset); handle <= uint32(spamdef.TPMSpamOffset+math.MaxUint16); handle++ {
 		handles, _, err := tpm2.GetCapability(tpm, tpm2.CapabilityHandles, 8, handle)
 		if err != nil {
 			return nil, err
@@ -36,7 +36,7 @@ func CurrentTpmState(tpm io.ReadWriter) (*TpmState, error) {
 			if uint32(hdl) > handle {
 				handle = uint32(hdl)
 			}
-			if uint32(hdl) > uint32(spamdef.TPMSpamOffset + math.MaxUint16) {
+			if uint32(hdl) > uint32(spamdef.TPMSpamOffset+math.MaxUint16) {
 				continue
 			}
 			data, err := tpm2.NVReadEx(tpm, hdl, hdl, "", 64)
