@@ -33,7 +33,7 @@ This function rearranges to (1).
 sequence of shared AND-rules" and does not reduce the number of ORed-together branches or the
 length of the executed policy.
 
-#### func (NormalizedPolicy) [CalculateTree](/pkg/normpolicy/normpolicy.go#L96)
+#### func (NormalizedPolicy) [CalculateTree](/pkg/normpolicy/normpolicy.go#L95)
 
 `func (norm NormalizedPolicy) CalculateTree(alg crypto.Hash) (*hashtree.PolicyHashTree, error)`
 
