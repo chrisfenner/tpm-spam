@@ -31,7 +31,7 @@ import (
 )
 
 var (
-	ErrBadSumType = errors.New("too many members were set on this sum type")
+	ErrBadSumType     = errors.New("too many members were set on this sum type")
 	ErrInvalidOperand = errors.New("operand must be 0x followed by a hex string of at least 1 byte")
 )
 

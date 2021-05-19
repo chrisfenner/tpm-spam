@@ -21,8 +21,9 @@ import (
 // InvalidPolicyError indicates that something is wrong with a spam policy.
 type InvalidPolicyError struct {
 	Policy interface{}
-	Err error
+	Err    error
 }
+
 func (e InvalidPolicyError) Error() string {
 	return fmt.Sprintf("invalid policy: %v:\n%+v", e.Err, e.Policy)
 }
@@ -31,13 +32,13 @@ func (e InvalidPolicyError) Unwrap() error {
 }
 
 var (
-	ErrInvalidType = errors.New("invalid type")
-	ErrInvalidIndex = errors.New("invalid index")
+	ErrInvalidType       = errors.New("invalid type")
+	ErrInvalidIndex      = errors.New("invalid index")
 	ErrInvalidComparison = errors.New("invalid comparison")
-	ErrInvalidAssertion = errors.New("invalid assertion")
-	ErrNoSubpolicies = errors.New("no subpolicies")
-	ErrOverflow = errors.New("offset + data length > 64")
-	ErrNilPolicy = errors.New("nil policy")
+	ErrInvalidAssertion  = errors.New("invalid assertion")
+	ErrNoSubpolicies     = errors.New("no subpolicies")
+	ErrOverflow          = errors.New("offset + data length > 64")
+	ErrNilPolicy         = errors.New("nil policy")
 )
 
 // For calculates the TPM policy hash for the given sequence of rules, with the specified algorithm.

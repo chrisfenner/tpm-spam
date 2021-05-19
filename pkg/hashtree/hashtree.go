@@ -16,8 +16,8 @@ import (
 
 var (
 	ErrNodeIndexOutOfBounds = errors.New("node index out of bounds")
-	ErrEmptyTree = errors.New("tree is empty")
-	ErrNodeNotAChild = errors.New("node not a child")
+	ErrEmptyTree            = errors.New("tree is empty")
+	ErrNodeNotAChild        = errors.New("node not a child")
 )
 
 // PolicyHashTree represents a TPM2_PolicyOR tree as a complete 8-tree, where all internal nodes are hashes of PolicyOR
@@ -112,7 +112,7 @@ func (t PolicyHashTree) leaf(i int) (*[]byte, error) {
 func internalPolicy(policy *[]byte, t PolicyHashTree, index int, alg crypto.Hash) error {
 	children := t.ChildrenOf(index)
 	result := make([]byte, alg.Size())
-	args := make([]interface{}, 0, 2 + len(children))
+	args := make([]interface{}, 0, 2+len(children))
 	args = append(args, result)
 	args = append(args, uint32(0x171))
 	for _, child := range children {
