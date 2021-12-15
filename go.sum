@@ -8,8 +8,8 @@ github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
 github.com/cespare/xxhash v1.1.0/go.mod h1:XrSqR1VqqWfGrhpAt58auRo0WTKS1nRRg3ghfAqPWnc=
-github.com/chrisfenner/go-tpm v0.3.3-0.20210510044014-909ffe2f102a h1:vtJheZLz0BXM6VTEYm2NvC0AgwgwcOubllDsV1I5lJs=
-github.com/chrisfenner/go-tpm v0.3.3-0.20210510044014-909ffe2f102a/go.mod h1:D9qK/Z94EPhYWTfXiz+achO6neeg4/2/hkMuG+sYP7g=
+github.com/chrisfenner/go-tpm-private v0.0.0-20210510044014-909ffe2f102a h1:Le5uYbNrurdo2lXkgB9suwkuTEn7JWZANyZRhxLtomM=
+github.com/chrisfenner/go-tpm-private v0.0.0-20210510044014-909ffe2f102a/go.mod h1:D9qK/Z94EPhYWTfXiz+achO6neeg4/2/hkMuG+sYP7g=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/coreos/bbolt v1.3.2/go.mod h1:iRUV2dpdMOn7Bo10OQBFzIJO9kkE559Wcmn+qkEiiKk=
 github.com/coreos/etcd v3.3.10+incompatible/go.mod h1:uF7uidLiAD3TWHmW31ZFd/JWoc32PjwdhPthX9715RE=

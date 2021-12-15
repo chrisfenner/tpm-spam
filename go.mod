@@ -11,3 +11,5 @@ require (
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.2.2
 )
+
+replace github.com/chrisfenner/go-tpm => github.com/chrisfenner/go-tpm-private v0.0.0-20210510044014-909ffe2f102a
